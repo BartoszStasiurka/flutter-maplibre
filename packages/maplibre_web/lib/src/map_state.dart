@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:math';
+import 'dart:ui';
 import 'dart:ui_web';
 
 import 'package:flutter/services.dart';
@@ -238,6 +239,7 @@ final class MapLibreMapStateWeb extends MapLibreMapState {
     double? zoom,
     double? bearing,
     double? pitch,
+    EdgeInsets padding = EdgeInsets.zero,
   }) async {
     _nextGestureCausedByController = true;
     final camera = getCamera();
@@ -247,6 +249,7 @@ final class MapLibreMapStateWeb extends MapLibreMapState {
         zoom: zoom ?? camera.zoom,
         bearing: bearing ?? camera.bearing,
         pitch: pitch ?? camera.pitch,
+        padding: padding.toPaddingOptions(),
       ),
     );
   }
@@ -260,6 +263,7 @@ final class MapLibreMapStateWeb extends MapLibreMapState {
     Duration nativeDuration = const Duration(seconds: 2),
     double webSpeed = 1.2,
     Duration? webMaxDuration,
+    EdgeInsets padding = EdgeInsets.zero,
   }) async {
     final destination = center?.toLngLat();
     _nextGestureCausedByController = true;
@@ -272,6 +276,7 @@ final class MapLibreMapStateWeb extends MapLibreMapState {
         pitch: pitch ?? camera.pitch,
         speed: webSpeed,
         maxDuration: webMaxDuration?.inMilliseconds,
+        padding: padding.toPaddingOptions(),
       ),
     );
     final completer = _movementCompleter = Completer<interop.MapLibreEvent>();
@@ -340,7 +345,7 @@ final class MapLibreMapStateWeb extends MapLibreMapState {
   /// https://wiki.openstreetmap.org/wiki/Zoom_levels
   @override
   double getMetersPerPixelAtLatitude(double latitude) =>
-      circumferenceOfEarth *
+      earthCircumferenceWgs84 *
       cos(latitude * degree2Radian) /
       pow(2, _map.getZoom() + 9);
 

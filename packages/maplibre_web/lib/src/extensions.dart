@@ -34,6 +34,8 @@ extension JsPointExt on interop.Point {
 /// Extension methods for the [EdgeInsets] class. Not exported publicly.
 extension EdgeInsetsExt on EdgeInsets {
   /// Convert a [EdgeInsets] to an internal [interop.PaddingOptions].
+  ///
+  /// Web does not require pixel ratio conversion.
   interop.PaddingOptions toPaddingOptions() => interop.PaddingOptions(
     right: right,
     left: left,

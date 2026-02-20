@@ -107,6 +107,12 @@ class MapLibreMapStateWebView extends MapLibreMapState {
                 zoom: view.getFloat64(17, true),
                 pitch: view.getFloat64(25, true),
                 bearing: view.getFloat64(33, true),
+                padding: {
+                  top: view.getFloat64(41, true),
+                  bottom: view.getFloat64(49, true),
+                  left: view.getFloat64(57, true),
+                  right: view.getFloat64(65, true),
+                },
             });
             break;
           }
@@ -119,6 +125,14 @@ class MapLibreMapStateWebView extends MapLibreMapState {
                 zoom: view.getFloat64(17, true),
                 pitch: view.getFloat64(25, true),
                 bearing: view.getFloat64(33, true),
+                padding: {
+                  top: view.getFloat64(41, true),
+                  bottom: view.getFloat64(49, true),
+                  left: view.getFloat64(57, true),
+                  right: view.getFloat64(65, true),
+                },
+                maxDuration: Number.isNaN(view.getFloat64(73, true)) ? undefined : view.getFloat64(73, true),
+                speed: view.getFloat64(81, true),
             });
             break;
           }
@@ -138,6 +152,8 @@ class MapLibreMapStateWebView extends MapLibreMapState {
                     left: view.getFloat64(89, true),
                     right: view.getFloat64(97, true),
                 },
+                maxDuration: Number.isNaN(view.getFloat64(105, true)) ? undefined : view.getFloat64(105, true),
+                speed: view.getFloat64(113, true),
             });
             break;
           }
@@ -290,7 +306,7 @@ class MapLibreMapStateWebView extends MapLibreMapState {
     EdgeInsets padding = EdgeInsets.zero,
   }) async {
     final currCamera = camera!;
-    final data = ByteData(1 + 8 * 13);
+    final data = ByteData(1 + 8 * 15);
     data.setUint8(0, actionFitBounds);
     data.setFloat64(1, bounds.longitudeWest, Endian.little);
     data.setFloat64(9, bounds.latitudeSouth, Endian.little);
@@ -309,6 +325,14 @@ class MapLibreMapStateWebView extends MapLibreMapState {
     data.setFloat64(81, padding.bottom, Endian.little);
     data.setFloat64(89, padding.left, Endian.little);
     data.setFloat64(97, padding.right, Endian.little);
+    data.setFloat64(
+      105,
+      webMaxDuration != null
+          ? webMaxDuration.inMilliseconds.toDouble()
+          : double.nan,
+      Endian.little,
+    );
+    data.setFloat64(113, webSpeed, Endian.little);
     _webSocket?.sendBytes(data);
   }
 
@@ -323,7 +347,7 @@ class MapLibreMapStateWebView extends MapLibreMapState {
   /// https://wiki.openstreetmap.org/wiki/Zoom_levels
   @override
   double getMetersPerPixelAtLatitude(double latitude) =>
-      circumferenceOfEarth *
+      earthCircumferenceWgs84 *
       cos(latitude * degree2Radian) /
       pow(2, (camera?.zoom ?? 0) + 9);
 
@@ -346,9 +370,10 @@ class MapLibreMapStateWebView extends MapLibreMapState {
     Duration nativeDuration = const Duration(seconds: 2),
     double webSpeed = 1.2,
     Duration? webMaxDuration,
+    EdgeInsets padding = EdgeInsets.zero,
   }) async {
     _nextGestureCausedByController = true;
-    final data = ByteData(1 + 8 * 5);
+    final data = ByteData(1 + 8 * 11);
     data.setUint8(0, actionAnimateCamera);
     final currCamera = camera!;
     final currCenter = center ?? currCamera.center;
@@ -357,6 +382,16 @@ class MapLibreMapStateWebView extends MapLibreMapState {
     data.setFloat64(17, zoom ?? currCamera.zoom, Endian.little);
     data.setFloat64(25, pitch ?? currCamera.pitch, Endian.little);
     data.setFloat64(33, bearing ?? currCamera.bearing, Endian.little);
+    data.setFloat64(41, padding.top, Endian.little);
+    data.setFloat64(49, padding.bottom, Endian.little);
+    data.setFloat64(57, padding.left, Endian.little);
+    data.setFloat64(65, padding.right, Endian.little);
+    data.setFloat64(
+      73,
+      webMaxDuration != null ? webMaxDuration.inSeconds.toDouble() : double.nan,
+      Endian.little,
+    );
+    data.setFloat64(81, webSpeed, Endian.little);
     _webSocket?.sendBytes(data);
   }
 
@@ -366,9 +401,10 @@ class MapLibreMapStateWebView extends MapLibreMapState {
     double? zoom,
     double? bearing,
     double? pitch,
+    EdgeInsets padding = EdgeInsets.zero,
   }) async {
     _nextGestureCausedByController = true;
-    final data = ByteData(1 + 8 * 5);
+    final data = ByteData(1 + 8 * 9);
     data.setUint8(0, actionMoveCamera);
     final currCamera = camera!;
     final currCenter = center ?? currCamera.center;
@@ -377,6 +413,10 @@ class MapLibreMapStateWebView extends MapLibreMapState {
     data.setFloat64(17, zoom ?? currCamera.zoom, Endian.little);
     data.setFloat64(25, pitch ?? currCamera.pitch, Endian.little);
     data.setFloat64(33, bearing ?? currCamera.bearing, Endian.little);
+    data.setFloat64(41, padding.top, Endian.little);
+    data.setFloat64(49, padding.bottom, Endian.little);
+    data.setFloat64(57, padding.left, Endian.little);
+    data.setFloat64(65, padding.right, Endian.little);
     _webSocket?.sendBytes(data);
   }
 

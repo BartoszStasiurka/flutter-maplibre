@@ -122,6 +122,7 @@ final class MapLibreMapStateIos extends MapLibreMapState {
     Duration nativeDuration = const Duration(seconds: 2),
     double webSpeed = 1.2,
     Duration? webMaxDuration,
+    EdgeInsets padding = EdgeInsets.zero,
   }) async {
     final mapView = _mapView;
     if (mapView == null) return;
@@ -133,9 +134,11 @@ final class MapLibreMapStateIos extends MapLibreMapState {
     if (center != null) {
       ffiCamera.centerCoordinate = center.toCLLocationCoordinate2D();
     }
-    mapView.flyToCamera$2(
+    mapView.flyToCamera$1(
       ffiCamera,
-      withDuration: nativeDuration.inMicroseconds / 1000000,
+      edgePadding: padding.toUIEdgeInsets(),
+      // use milliseconds for extra precision
+      withDuration: nativeDuration.inMilliseconds / 1000.0,
     );
   }
 
@@ -174,11 +177,9 @@ final class MapLibreMapStateIos extends MapLibreMapState {
     final mapView = _mapView;
     if (mapView == null) return;
 
-    final ffiBounds = bounds.toMLNCoordinateBounds();
-    final ffiPadding = padding.toUIEdgeInsets();
     mapView.setVisibleCoordinateBounds$1(
-      ffiBounds,
-      edgePadding: ffiPadding,
+      bounds.toMLNCoordinateBounds(),
+      edgePadding: padding.toUIEdgeInsets(),
       animated: true,
     );
   }
@@ -201,6 +202,7 @@ final class MapLibreMapStateIos extends MapLibreMapState {
     double? zoom,
     double? bearing,
     double? pitch,
+    EdgeInsets padding = EdgeInsets.zero,
   }) async {
     final mapView = _mapView;
     if (mapView == null) return;
@@ -211,7 +213,11 @@ final class MapLibreMapStateIos extends MapLibreMapState {
     if (center != null) {
       ffiCamera.centerCoordinate = center.toCLLocationCoordinate2D();
     }
-    mapView.setCamera(ffiCamera, animated: false);
+    mapView.setCamera$3(
+      ffiCamera,
+      withDuration: 0,
+      edgePadding: padding.toUIEdgeInsets(),
+    );
   }
 
   @override
@@ -486,6 +492,7 @@ final class MapLibreMapStateIos extends MapLibreMapState {
   }
 
   void _onCameraMoved(MLNMapView mapView) {
+    if (!mounted) return;
     final ffiCamera = mapView.camera;
     final mapCamera = MapCamera(
       center: ffiCamera.centerCoordinate.toGeographic(),
