@@ -6,6 +6,7 @@ class MapLibreView: NSObject, FlutterPlatformView, UIGestureRecognizerDelegate, 
     private var _viewId: Int64
     private var _mapView: MLNMapView!
     private var _registrar: FlutterPluginRegistrar
+    private var _pendingStyleLoad: MLNStyle?
 
     init(registrar: FlutterPluginRegistrar, frame: CGRect, viewId: Int64, initStyle: String) {
         _registrar = registrar
@@ -33,6 +34,7 @@ class MapLibreView: NSObject, FlutterPlatformView, UIGestureRecognizerDelegate, 
 
         _mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         MapLibreRegistry.addMap(viewId: viewId, map: _mapView)
+        MapLibreRegistry.addPlatformView(viewId: viewId, view: self)
         _view.addSubview(_mapView)
         _mapView.delegate = self
 
@@ -94,6 +96,16 @@ class MapLibreView: NSObject, FlutterPlatformView, UIGestureRecognizerDelegate, 
         MapLibreRegistry.getFlutterApi(viewId: _viewId)
     }
 
+    func flushPendingStyleLoad() {
+        guard let pendingStyle = _pendingStyleLoad else { return }
+        guard let api = api else {
+            // API not ready yet, will be called from MapLibreRegistry.addFlutterApi
+            return
+        }
+        _pendingStyleLoad = nil
+        api.didFinishLoadingStyle(mapView: _mapView, style: pendingStyle)
+    }
+
     @objc private func onTap(_ sender: UITapGestureRecognizer) {
         let screenPosition = sender.location(in: _mapView)
         api?.onTap(screenLocation: screenPosition)
@@ -128,7 +140,14 @@ class MapLibreView: NSObject, FlutterPlatformView, UIGestureRecognizerDelegate, 
     }
 
     func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
-        api?.didFinishLoadingStyle(mapView: mapView, style: style)
+        // Always store the style first - the FFI callback may not be ready
+        // even if api exists (Dart runtime initialization race)
+        _pendingStyleLoad = style
+        
+        // Try to flush after a delay to give Dart FFI time to initialize
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.flushPendingStyleLoad()
+        }
     }
 
     func mapView(_ mapView: MLNMapView, regionWillChangeWith reason: MLNCameraChangeReason, animated: Bool) {
