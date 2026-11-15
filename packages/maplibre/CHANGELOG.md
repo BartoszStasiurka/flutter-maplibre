@@ -28,6 +28,8 @@
 - `StyleController.setPlacementTransitions` turns the fade of labels whose
   placement changes off and on
   ([#611](https://github.com/maplibre/flutter-maplibre/issues/611)).
+- A pinch rotates the map only after its fingers twist 15 degrees, set with
+  `MapGestures.rotateThreshold`.
 
 ### Bug Fixes
 

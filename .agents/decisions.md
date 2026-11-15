@@ -692,6 +692,16 @@ Each entry: the decision, then why.
   wheel delta by the device pixel ratio except on macOS, so the recognizer
   multiplies it back); a trackpad pinch that arrives as a scale signal
   zooms by its scale.
+- **A pinch rotates only after its fingers twist
+  `MapGestures.rotateThreshold` degrees (default 15) since it started.** The
+  twist below it is dropped, so the map doesn't jump; zoom and pan are never
+  held back. GL JS waits for 25 px along the circle of the fingers (about 14°
+  at 200 px apart); MapLibre Android waits 3° to 15° depending on speed and
+  turns rotation off once a zoom starts first; iOS waits 3° while zooming;
+  flutter_map waits 20° only with `enableMultiFingerGestureRace`, where the
+  first gesture past its threshold locks the others out. A fixed angle is
+  easier to explain and set than GL JS's distance, and locking rotation out
+  after a zoom would make zooming and turning at once impossible.
 - **A long click is a hold of one finger.** Flutter's long press recognizer
   times the first pointer alone and wins the arena when its deadline passes,
   whatever else landed, so two fingers resting on the map before a pinch were
