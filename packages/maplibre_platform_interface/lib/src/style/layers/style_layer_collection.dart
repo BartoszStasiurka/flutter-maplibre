@@ -6,9 +6,12 @@ part of 'style_layer.dart';
 /// and follows every change made through it. Changes apply to the collection
 /// at once and reach the map in the order they were made.
 ///
+/// It notifies its listeners when a layer is added, removed or moved, but
+/// not when the properties of a layer change.
+///
 /// {@category Style}
 /// {@subCategory Style Layers}
-final class StyleLayers extends Iterable<StyleLayer> {
+final class StyleLayers extends Iterable<StyleLayer> implements Listenable {
   /// Creates an empty collection. Platforms create it, on their [StyleBackend]
   /// and the sources of their style.
   StyleLayers(this._backend, {required this._sources});
@@ -17,6 +20,14 @@ final class StyleLayers extends Iterable<StyleLayer> {
   final StyleSources _sources;
   final _layers = <StyleLayer>[];
   final ValueNotifier<int> _callbacks = ValueNotifier(0);
+  final ValueNotifier<int> _changes = ValueNotifier(0);
+
+  @override
+  void addListener(VoidCallback listener) => _changes.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) =>
+      _changes.removeListener(listener);
 
   /// The part of the map that owns some of the layers, see
   /// [setStyleLayersOwner].
@@ -24,6 +35,7 @@ final class StyleLayers extends Iterable<StyleLayer> {
 
   /// Tells the owner that the app added, moved or removed a layer.
   void _layoutChanged() {
+    _changes.value++;
     final owner = _styleOwner;
     if (owner != null && !owner.isWriting) owner.layoutChanged();
   }
@@ -111,6 +123,7 @@ final class StyleLayers extends Iterable<StyleLayer> {
         _layers.remove(layer);
         _detach(layer);
         if (layer._hasCallbacks) _callbacksChanged();
+        _changes.value++;
       }
       rethrow;
     }
@@ -177,6 +190,7 @@ final class StyleLayers extends Iterable<StyleLayer> {
     _layers.forEach(_detach);
     _layers.clear();
     if (hadCallbacks) _callbacksChanged();
+    _changes.value++;
   }
 
   int _indexOf(String id) => _layers.indexWhere((layer) => layer.id == id);

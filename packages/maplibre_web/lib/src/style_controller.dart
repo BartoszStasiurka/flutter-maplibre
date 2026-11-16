@@ -36,6 +36,7 @@ class StyleControllerWeb extends StyleController implements StyleBackend {
     if (json case {'layers': final List<Object?> styleLayers}) {
       layers.load(styleLayers.whereType<Map<String, Object?>>());
     }
+    _attributions = attributions;
   }
 
   /// Reads what the tile sources of the map learned from their TileJSON into
@@ -176,6 +177,17 @@ class StyleControllerWeb extends StyleController implements StyleBackend {
     String url,
     Map<String, Object?> specification,
   ) async => _map.getSource(id)!.setUrl(url);
+
+  List<String> _attributions = const [];
+
+  /// Notifies the listeners if [attributions] changed since the last check,
+  /// on the events on which the gl-js attribution control updates.
+  void checkAttributions() {
+    final attributions = this.attributions;
+    if (listEquals(attributions, _attributions)) return;
+    _attributions = attributions;
+    notifyAttributionsChanged();
+  }
 
   @override
   List<String> get attributions {
@@ -348,6 +360,7 @@ class StyleControllerWeb extends StyleController implements StyleBackend {
       URL.revokeObjectURL(url);
     }
     _blobUrls.clear();
+    super.dispose();
   }
 
   /// A blob URL of a PNG of the image of [provider].

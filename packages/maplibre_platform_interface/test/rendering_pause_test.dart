@@ -17,6 +17,9 @@ class _PauseRecordingState extends MapLibreMapState {
   void setRenderingPaused({required bool paused}) => calls.add(paused);
 
   @override
+  StyleController? get style => null;
+
+  @override
   Widget buildPlatformWidget(BuildContext context) => const SizedBox.expand();
 
   // The controller calls are not under test.

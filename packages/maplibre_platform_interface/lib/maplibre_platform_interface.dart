@@ -42,4 +42,5 @@ export 'src/style/style.dart';
 export 'src/style_controller.dart';
 export 'src/utils.dart';
 export 'src/widget/map.dart';
+export 'src/widget/map_plugin.dart' show MapPlugin;
 export 'src/widget/map_state.dart';

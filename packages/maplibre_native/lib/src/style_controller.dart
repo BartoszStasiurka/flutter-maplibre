@@ -12,7 +12,7 @@ import 'package:maplibre_platform_interface/maplibre_platform_interface.dart';
 /// them in.
 class StyleControllerNative extends StyleController implements StyleBackend {
   /// Creates a style controller for a map.
-  StyleControllerNative(this._map, {this.onAttributionsChanged});
+  StyleControllerNative(this._map);
 
   final mln.MapHandle _map;
 
@@ -27,9 +27,6 @@ class StyleControllerNative extends StyleController implements StyleBackend {
       options.copyWith(enablePlacementTransitions: enabled),
     );
   }
-
-  /// Called when [refreshAttributions] finds that the attributions changed.
-  final VoidCallback? onAttributionsChanged;
 
   @override
   late final StyleSources sources = StyleSources(this, layers: () => layers);
@@ -379,7 +376,7 @@ class StyleControllerNative extends StyleController implements StyleBackend {
       return _cachedAttributions;
     }
     _cachedAttributions = attributions;
-    onAttributionsChanged?.call();
+    if (!_disposed) notifyAttributionsChanged();
     return attributions;
   }
 
@@ -405,5 +402,6 @@ class StyleControllerNative extends StyleController implements StyleBackend {
     _disposed = true;
     layers.dispose();
     sources.dispose();
+    super.dispose();
   }
 }

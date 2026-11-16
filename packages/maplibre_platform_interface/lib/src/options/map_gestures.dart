@@ -75,6 +75,20 @@ class MapGestures {
   /// they lift. 0 rotates right away.
   final double rotateThreshold;
 
+  /// The gestures that both these and [other] allow, with the
+  /// [rotateThreshold] of these.
+  MapGestures restrictedBy(MapGestures other) => MapGestures(
+    drag: drag && other.drag,
+    fling: fling && other.fling,
+    pinch: pinch && other.pinch,
+    scrollWheel: scrollWheel && other.scrollWheel,
+    doubleTap: doubleTap && other.doubleTap,
+    doubleTapDrag: doubleTapDrag && other.doubleTapDrag,
+    secondaryDrag: secondaryDrag && other.secondaryDrag,
+    twoFingerDrag: twoFingerDrag && other.twoFingerDrag,
+    rotateThreshold: rotateThreshold,
+  );
+
   /// A copy with the given gestures replaced.
   MapGestures copyWith({
     bool? drag,

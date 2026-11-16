@@ -51,6 +51,14 @@ class MapMovements {
   /// Whether gestures may tilt (pitch) the map camera.
   final bool pitch;
 
+  /// The movements that both these and [other] allow.
+  MapMovements restrictedBy(MapMovements other) => MapMovements(
+    pan: pan && other.pan,
+    zoom: zoom && other.zoom,
+    rotate: rotate && other.rotate,
+    pitch: pitch && other.pitch,
+  );
+
   /// A copy with the given movements replaced.
   MapMovements copyWith({bool? pan, bool? zoom, bool? rotate, bool? pitch}) =>
       MapMovements(

@@ -100,7 +100,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
       // renders, so its first frame shows them.
       final renderer = await MapRenderer.create(
         extent: extent,
-        eventMask: _eventMask = widget.eventMask,
+        eventMask: _eventMask = effectiveWidget.eventMask,
         fastPforEnabled: options.fastPforEnabled,
         localIdeographFontFamily: options.localIdeographFontFamily,
         setUp: _setUp,
@@ -116,7 +116,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
         camera = _readCamera();
         isInitialized = true;
       });
-      widget.onMapCreated?.call(this);
+      effectiveWidget.onMapCreated?.call(this);
       // Events that arrived meanwhile, such as the style load, follow
       // onMapCreated.
       renderer.start();
@@ -136,7 +136,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
   Future<void> _setUp(mln.MapHandle map) async {
     _map = map;
     // The callbacks may have changed while the map was being created.
-    final eventMask = widget.eventMask;
+    final eventMask = effectiveWidget.eventMask;
     if (eventMask != _eventMask) {
       _eventMask = eventMask;
       map.discarding.setEventMask(eventMask);
@@ -203,13 +203,17 @@ class MapLibreMapStateNative extends MapLibreMapState {
     if (oldWidget.options.style != options.style) {
       unawaited(_setStyle(options.style));
     }
-    final eventMask = widget.eventMask;
-    final map = _map;
-    if (eventMask != _eventMask && map != null) {
-      _eventMask = eventMask;
-      map.discarding.setEventMask(eventMask);
-    }
     super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void didUpdateCallbacks() {
+    final eventMask = effectiveWidget.eventMask;
+    final handle = _map;
+    if (eventMask != _eventMask && handle != null) {
+      _eventMask = eventMask;
+      handle.discarding.setEventMask(eventMask);
+    }
   }
 
   @override
@@ -242,7 +246,9 @@ class MapLibreMapStateNative extends MapLibreMapState {
                 : CameraChangeReason.map);
         _nextChangeReason = null;
         _moveReason = reason;
-        widget.onCameraMoveStart?.call(MapEventCameraMoveStart(reason: reason));
+        effectiveWidget.onCameraMoveStart?.call(
+          MapEventCameraMoveStart(reason: reason),
+        );
       case mln.RuntimeEventType.mapCameraIsChanging:
         _onCameraChanged();
       case mln.RuntimeEventType.mapCameraDidChange:
@@ -259,11 +265,11 @@ class MapLibreMapStateNative extends MapLibreMapState {
       case mln.RuntimeEventType.mapStyleLoaded:
         unawaited(_onStyleLoaded());
       case mln.RuntimeEventType.mapIdle:
-        widget.onIdle?.call(const MapEventIdle());
+        effectiveWidget.onIdle?.call(const MapEventIdle());
       case mln.RuntimeEventType.mapSourceChanged:
         // A source learns its attribution once its tile set loads.
         unawaited(style?.refreshAttributions());
-        final onSourceChanged = widget.onSourceChanged;
+        final onSourceChanged = effectiveWidget.onSourceChanged;
         if (onSourceChanged == null) return;
         if (event.payload case mln.RuntimeEventPayloadSourceChanged(
           :final value,
@@ -279,11 +285,13 @@ class MapLibreMapStateNative extends MapLibreMapState {
       case mln.RuntimeEventType.mapSpriteError:
         _onError(MapErrorKind.sprite, event.message);
       case mln.RuntimeEventType.mapLoadingStarted:
-        widget.onLoadingStarted?.call(const MapEventLoadingStarted());
+        effectiveWidget.onLoadingStarted?.call(const MapEventLoadingStarted());
       case mln.RuntimeEventType.mapLoadingFinished:
-        widget.onLoadingFinished?.call(const MapEventLoadingFinished());
+        effectiveWidget.onLoadingFinished?.call(
+          const MapEventLoadingFinished(),
+        );
       case mln.RuntimeEventType.mapStyleImageMissing:
-        final onStyleImageMissing = widget.onStyleImageMissing;
+        final onStyleImageMissing = effectiveWidget.onStyleImageMissing;
         if (onStyleImageMissing == null) return;
         if (event.payload case mln.RuntimeEventPayloadStyleImage(
           :final value,
@@ -291,7 +299,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
           onStyleImageMissing(MapEventStyleImageMissing(id: value.imageId));
         }
       case mln.RuntimeEventType.mapTileAction:
-        final onTile = widget.onTile;
+        final onTile = effectiveWidget.onTile;
         final action = switch (event.payload) {
           mln.RuntimeEventPayloadTileAction(:final value) => value,
           _ => null,
@@ -311,7 +319,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
           ),
         );
       case mln.RuntimeEventType.mapRenderFrameFinished:
-        final onRenderFrame = widget.onRenderFrame;
+        final onRenderFrame = effectiveWidget.onRenderFrame;
         final frame = switch (event.payload) {
           mln.RuntimeEventPayloadRenderFrame(:final value) => value,
           _ => null,
@@ -330,10 +338,12 @@ class MapLibreMapStateNative extends MapLibreMapState {
         );
       case mln.RuntimeEventType.mapRenderMapFinished:
         // The C API reports only fully rendered maps here.
-        widget.onRenderMap?.call(const MapEventRenderMap(fullyRendered: true));
+        effectiveWidget.onRenderMap?.call(
+          const MapEventRenderMap(fullyRendered: true),
+        );
       case mln.RuntimeEventType.mapGlyphsRequested ||
           mln.RuntimeEventType.mapGlyphsLoaded:
-        final onGlyphs = widget.onGlyphs;
+        final onGlyphs = effectiveWidget.onGlyphs;
         final glyphs = switch (event.payload) {
           mln.RuntimeEventPayloadGlyphs(:final value) => value,
           _ => null,
@@ -351,7 +361,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
         );
       case mln.RuntimeEventType.mapSpriteRequested ||
           mln.RuntimeEventType.mapSpriteLoaded:
-        final onSprite = widget.onSprite;
+        final onSprite = effectiveWidget.onSprite;
         final sprite = switch (event.payload) {
           mln.RuntimeEventPayloadSprite(:final value) => value,
           _ => null,
@@ -374,7 +384,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
   /// Reports an error to [MapLibreMap.onError], or prints it while no
   /// callback is set, so it is never lost.
   void _onError(MapErrorKind kind, String message) {
-    final onError = widget.onError;
+    final onError = effectiveWidget.onError;
     if (onError == null) {
       debugPrint('maplibre_native: $message');
       return;
@@ -393,7 +403,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
     final newCamera = _readCamera();
     if (newCamera == null || newCamera == _eventCamera) return;
     _eventCamera = newCamera;
-    widget.onCameraMove?.call(
+    effectiveWidget.onCameraMove?.call(
       MapEventCameraMove(camera: newCamera, reason: _moveReason),
     );
   }
@@ -420,7 +430,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
   void _onCameraIdle() {
     if (!_cameraMoving) return;
     _cameraMoving = false;
-    final onCameraMoveEnd = widget.onCameraMoveEnd;
+    final onCameraMoveEnd = effectiveWidget.onCameraMoveEnd;
     final camera = _readCamera();
     if (onCameraMoveEnd == null || camera == null) return;
     onCameraMoveEnd(MapEventCameraMoveEnd(camera: camera, reason: _moveReason));
@@ -483,15 +493,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
     detachAnnotations();
     style?.dispose();
     style = null;
-    late final StyleControllerNative styleController;
-    styleController = StyleControllerNative(
-      map,
-      // Rebuilds the widgets in MapLibreMap.children, such as
-      // SourceAttribution.
-      onAttributionsChanged: () {
-        if (mounted && style == styleController) setState(() {});
-      },
-    );
+    final styleController = StyleControllerNative(map);
     _loadingStyle = styleController;
     // The style is only handed out once its layers and sources are known.
     await styleController.load();
@@ -501,7 +503,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
     }
     _loadingStyle = null;
     style = styleController;
-    widget.onStyleLoaded?.call(styleController);
+    effectiveWidget.onStyleLoaded?.call(styleController);
     attachAnnotations(styleController);
     // Refresh the widgets in MapLibreMap.children.
     setState(() {});

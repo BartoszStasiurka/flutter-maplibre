@@ -147,7 +147,7 @@ class _State extends MapLibreMapState {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _Style implements StyleController {
+class _Style extends StyleController {
   _Style() {
     sources = StyleSources(_backend, layers: () => layers);
     layers = StyleLayers(_backend, sources: sources);
@@ -160,6 +160,9 @@ class _Style implements StyleController {
 
   @override
   late final StyleSources sources;
+
+  @override
+  List<String> get attributions => const [];
 
   @override
   void batch(void Function() updates) => updates();
@@ -880,5 +883,46 @@ void main() {
       () => _PointLayer(list: const [], onDragEnd: (_) {}),
       throwsAssertionError,
     );
+  });
+  testWidgets('StyleController.of rebuilds when the layers or sources of '
+      'the style change', (tester) async {
+    final builds = <List<String>?>[];
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: MapLibreMap(
+          children: [
+            Builder(
+              builder: (context) {
+                final style = StyleController.maybeOf(context);
+                builds.add(style?.layers.map((layer) => layer.id).toList());
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+    expect(builds.last, isNull);
+    final style = _Style();
+    platform.state.loadStyle(style);
+    await tester.pump();
+    expect(builds.last, isEmpty);
+    builds.clear();
+    await style.sources.add(const GeoJsonSource.url(id: 's', url: 'https://s'));
+    await tester.pump();
+    expect(builds, hasLength(1));
+    await style.layers.add(CircleStyleLayer(id: 'c', sourceId: 's'));
+    await tester.pump();
+    expect(builds.last, ['c']);
+    // Properties don't rebuild.
+    builds.clear();
+    (style.layers['c']! as CircleStyleLayer).radius = const Literal(3);
+    await tester.pump();
+    expect(builds, isEmpty);
+    // A new style does.
+    platform.state.loadStyle(_Style());
+    await tester.pump();
+    expect(builds.last, isEmpty);
   });
 }

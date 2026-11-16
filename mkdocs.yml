@@ -20,6 +20,7 @@ nav:
           - Styles: docs/styles.md
           - Events: docs/events.md
           - User Interface: docs/ui.md
+          - Plugins: docs/plugins.md
           - User Location: docs/user-location.md
           - Offline & Cache: docs/offline.md
           - Network: docs/network.md

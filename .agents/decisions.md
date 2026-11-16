@@ -273,6 +273,35 @@ Each entry: the decision, then why.
   gl-js events; per-axis camera events (gl-js `zoomstart`, `rotate` …), raw
   pointer events, box zoom, `styledata` and `dataabort` are left out on
   purpose, and offline events stay on `OfflineManager`.
+- **Plugins are widgets in `MapLibreMap.children`; `MapPlugin` gives them
+  the declarative parameters of `MapLibreMap`.** Layers, `on…` callbacks,
+  `movements` and `gestures` of every `MapPlugin` are combined into one
+  `MapLibreMap` (`MapLibreMapState.effectiveWidget`), which platforms read instead of
+  `widget` and follow in `didUpdateCallbacks`. Plugin layers go after
+  `MapLibreMap.layers` in tree order; input events go to the plugins in
+  hit-test order at the pointer (a drag to the plugins at its start), then
+  to the app; other events go to every plugin in tree order, then the app.
+  No plugin can keep an event from others (no stop-propagation, as in
+  gl-js); `preventDefault` stays on double click and drag start. Movements
+  and gestures are ANDed. Plugins register after a frame (post-frame), so
+  their changes show one frame late. A controller-based `on<T>()` and plugin
+  objects were rejected as imperative; slots by kind (`controls:`,
+  `plugins:`) because one plugin can have layers, events and UI.
+- **`MapLibreInheritedModel` has aspects.** `MapController.of` and
+  `MapOptions.of` rebuild on a new controller, options or style, or when
+  rendering pauses or resumes; `CameraPosition.of` on every camera change;
+  `StyleController.of` on a new style and on every notification of the
+  style. Widgets that show something that moves with the camera must read
+  `CameraPosition.of`.
+- **The style notifies structure, not values.** `StyleLayers` notify on
+  add, remove and move, `StyleSources` on add, remove and changed TileJSON,
+  the `StyleController` on those and on attribution changes (platforms call
+  `notifyAttributionsChanged`). Layer properties and source data don't
+  notify, as apps change them every frame and every `StyleController.of`
+  widget would rebuild with them. The map counts the notifications into the
+  model, after the frame when they come while the tree builds (annotation
+  layers change there). Only the model rebuilds for them (a
+  `ValueListenableBuilder` around it), not the platform widget.
 - **`MapOptions.style` is a sealed `MapStyle` and declarative; there is no
   `setStyle`.** Backends switch on the type instead of guessing from the
   string, and a changed `style` loads the new style.

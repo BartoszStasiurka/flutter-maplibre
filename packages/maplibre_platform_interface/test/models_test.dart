@@ -398,6 +398,25 @@ void main() {
     });
   });
 
+  group('restrictedBy', () {
+    test('allows what both movements allow', () {
+      expect(
+        const MapMovements(rotate: false)
+            .restrictedBy(const MapMovements(pitch: false)),
+        const MapMovements(rotate: false, pitch: false),
+      );
+    });
+
+    test('allows what both gestures allow and keeps the threshold', () {
+      expect(
+        const MapGestures(fling: false, rotateThreshold: 3).restrictedBy(
+          const MapGestures(doubleTap: false, rotateThreshold: 40),
+        ),
+        const MapGestures(fling: false, doubleTap: false, rotateThreshold: 3),
+      );
+    });
+  });
+
   group('MapMovements', () {
     test('allows every movement by default and none with none', () {
       const all = MapMovements();

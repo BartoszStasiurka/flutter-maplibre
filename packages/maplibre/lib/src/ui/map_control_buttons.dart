@@ -54,50 +54,47 @@ class MapControlButtons extends StatelessWidget {
     final controller = MapController.maybeOf(context);
     if (controller == null) return const SizedBox.shrink();
 
-    return SafeArea(
-      child: Container(
-        alignment: alignment,
-        padding: padding,
-        child: Column(
-          spacing: 8,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    return MapAlignItem(
+      alignment: alignment,
+      padding: padding,
+      child: Column(
+        spacing: 8,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          MapButton(
+            backgroundColor: backgroundColor,
+            iconColor: iconColor,
+            icon: MapButtonIcon.zoomIn,
+            label: 'Zoom in',
+            onPressed: () => controller.animateCamera(
+              CameraUpdate.position(zoom: controller.getCamera().zoom + 1),
+              animation: _zoomAnimation,
+            ),
+          ),
+          MapButton(
+            backgroundColor: backgroundColor,
+            iconColor: iconColor,
+            icon: MapButtonIcon.zoomOut,
+            label: 'Zoom out',
+            onPressed: () => controller.animateCamera(
+              CameraUpdate.position(zoom: controller.getCamera().zoom - 1),
+              animation: _zoomAnimation,
+            ),
+          ),
+          if (onTrackingPressed case final VoidCallback onPressed)
             MapButton(
               backgroundColor: backgroundColor,
               iconColor: iconColor,
-              icon: MapButtonIcon.zoomIn,
-              label: 'Zoom in',
-              onPressed: () => controller.animateCamera(
-                CameraUpdate.position(zoom: controller.getCamera().zoom + 1),
-                animation: _zoomAnimation,
-              ),
+              icon: switch (tracking) {
+                UserLocationTracking.position => MapButtonIcon.location,
+                UserLocationTracking.positionAndHeading =>
+                  MapButtonIcon.locationAndHeading,
+                UserLocationTracking.none || null => MapButtonIcon.locationOff,
+              },
+              label: 'Track location',
+              onPressed: onPressed,
             ),
-            MapButton(
-              backgroundColor: backgroundColor,
-              iconColor: iconColor,
-              icon: MapButtonIcon.zoomOut,
-              label: 'Zoom out',
-              onPressed: () => controller.animateCamera(
-                CameraUpdate.position(zoom: controller.getCamera().zoom - 1),
-                animation: _zoomAnimation,
-              ),
-            ),
-            if (onTrackingPressed case final VoidCallback onPressed)
-              MapButton(
-                backgroundColor: backgroundColor,
-                iconColor: iconColor,
-                icon: switch (tracking) {
-                  UserLocationTracking.position => MapButtonIcon.location,
-                  UserLocationTracking.positionAndHeading =>
-                    MapButtonIcon.locationAndHeading,
-                  UserLocationTracking.none ||
-                  null => MapButtonIcon.locationOff,
-                },
-                label: 'Track location',
-                onPressed: onPressed,
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -22,6 +22,7 @@ class App extends StatelessWidget {
         body: MapLibreInheritedModel(
           cameraPosition: camera,
           mapController: controller,
+          style: controller.style,
           child: Stack(children: children),
         ),
       ),

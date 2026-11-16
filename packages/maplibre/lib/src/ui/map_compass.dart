@@ -85,14 +85,14 @@ class MapCompass extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = MapController.maybeOf(context);
-    if (controller == null) return const SizedBox.shrink();
+    final camera = CameraPosition.maybeOf(context);
+    if (controller == null || camera == null) return const SizedBox.shrink();
 
-    final camera = controller.getCamera();
     if (hideIfRotatedNorth && camera.bearing == 0) {
       return const SizedBox.shrink();
     }
 
-    return Container(
+    return MapAlignItem(
       alignment: alignment,
       padding: padding,
       child: Transform.rotate(

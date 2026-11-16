@@ -17,6 +17,30 @@ void main() {
 
   List<String> ids() => layers.map((layer) => layer.id).toList();
 
+  test('notify when layers or sources come, go or move', () async {
+    var notified = 0;
+    layers.addListener(() => notified++);
+    sources.addListener(() => notified++);
+    await sources.add(const GeoJsonSource.url(id: 's', url: 'https://s'));
+    expect(notified, 1);
+    await layers.add(CircleStyleLayer(id: 'a', sourceId: 's'));
+    await layers.add(CircleStyleLayer(id: 'b', sourceId: 's'));
+    expect(notified, 3);
+    layers.move('b', belowLayerId: 'a');
+    expect(notified, 4);
+    // Properties and data are not the structure of the style.
+    (layers['a']! as CircleStyleLayer).radius = const Literal(2);
+    await sources.updateGeoJsonData(
+      's',
+      const .json({'type': 'FeatureCollection', 'features': <Object?>[]}),
+    );
+    expect(notified, 4);
+    await layers.remove('a');
+    await layers.remove('b');
+    await sources.remove('s');
+    expect(notified, 7);
+  });
+
   group('StyleLayers', () {
     test('notifies when a layer gets or loses its event callbacks', () async {
       var notified = 0;

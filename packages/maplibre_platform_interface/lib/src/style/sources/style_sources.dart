@@ -7,9 +7,13 @@ part of 'source.dart';
 /// update replaces the object in this collection. Changes apply to the
 /// collection at once and reach the map in the order they were made.
 ///
+/// It notifies its listeners when a source is added or removed, or the
+/// TileJSON of a source changed what it says, such as its attribution, but
+/// not when the data of a source changes.
+///
 /// {@category Style}
 /// {@subCategory Style Sources}
-final class StyleSources extends Iterable<Source> {
+final class StyleSources extends Iterable<Source> implements Listenable {
   /// Creates an empty collection. Platforms create it, on their [StyleBackend]
   /// and the `layers` of their style, which [remove] checks.
   StyleSources(this._backend, {this._layers});
@@ -19,6 +23,14 @@ final class StyleSources extends Iterable<Source> {
 
   /// The sources by id, in the order of the style.
   final _sources = <String, Source>{};
+  final ValueNotifier<int> _changes = ValueNotifier(0);
+
+  @override
+  void addListener(VoidCallback listener) => _changes.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) =>
+      _changes.removeListener(listener);
 
   /// The source JSON of the sources as they were specified, without what a
   /// TileJSON resource added: an update must not carry that over.
@@ -72,12 +84,14 @@ final class StyleSources extends Iterable<Source> {
     }
     _sources[source.id] = source;
     if (_isTileSource(source)) _specifications[source.id] = source.toJson()!;
+    _changes.value++;
     try {
       await _backend.addSource(source);
     } catch (_) {
       if (identical(_sources[source.id], source)) {
         _sources.remove(source.id);
         _specifications.remove(source.id);
+        _changes.value++;
       }
       rethrow;
     }
@@ -101,6 +115,7 @@ final class StyleSources extends Iterable<Source> {
     }
     _sources.remove(id);
     _specifications.remove(id);
+    _changes.value++;
     await _backend.removeSource(id);
   }
 
@@ -205,6 +220,7 @@ final class StyleSources extends Iterable<Source> {
     };
     if (jsonEquals(current, merged)) return false;
     _sources[id] = Source.fromJson(id, merged);
+    _changes.value++;
     return true;
   }
 
@@ -212,6 +228,7 @@ final class StyleSources extends Iterable<Source> {
   void dispose() {
     _sources.clear();
     _specifications.clear();
+    _changes.value++;
   }
 
   T _sourceOfType<T extends Source>(String id) {

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:maplibre/maplibre.dart';
@@ -137,6 +138,49 @@ void runTests() {
         expect(frames.last.stats, isNotNull);
         expect(frames.last.fullyRendered, isNotNull);
       }
+    });
+
+    testWidgets('report events to a plugin added after creation', (
+      tester,
+    ) async {
+      final shown = ValueNotifier(false);
+      addTearDown(shown.dispose);
+      final frames = <MapEventRenderFrame>[];
+      final moves = <MapEventCameraMove>[];
+      final map = await pumpMap(
+        tester,
+        children: [
+          ValueListenableBuilder(
+            valueListenable: shown,
+            builder: (context, shown, _) => shown
+                ? MapPlugin(onRenderFrame: frames.add, onCameraMove: moves.add)
+                : const SizedBox.shrink(),
+          ),
+        ],
+      );
+      shown.value = true;
+      // The map registers the plugin after the frame that mounts it.
+      await tester.pump();
+      await tester.pump();
+      // A browser only renders a frame when the map changes.
+      await map.controller.moveCamera(
+        const CameraUpdate.position(center: Geographic(lon: 10, lat: 20)),
+      );
+      await map.pumpUntil(
+        () => moves.isNotEmpty && frames.isNotEmpty,
+        reason: () => 'waiting for a camera move and a frame in the plugin',
+      );
+
+      shown.value = false;
+      await tester.pump();
+      await tester.pump();
+      final heard = moves.length;
+      final since = map.events.length;
+      await map.controller.moveCamera(
+        const CameraUpdate.position(center: Geographic(lon: 0, lat: 0)),
+      );
+      await map.waitForEvent<MapEventCameraMoveEnd>(since: since);
+      expect(moves, hasLength(heard));
     });
   });
 }

@@ -2,6 +2,9 @@
 
 ### Breaking Changes
 
+- Widgets that call only `MapController.of` or `MapOptions.of` no longer
+  rebuild while the camera moves; read `CameraPosition.of` for what depends
+  on the camera.
 - `MapCompass`, `MapControlButtons`, `MapScalebar` and `SourceAttribution` no
   longer depend on Material and no longer follow the app's `Theme`; set their
   new color and text style parameters instead
@@ -15,6 +18,14 @@
 
 ### Features
 
+- `MapPlugin` lets a widget in `MapLibreMap.children` add layers, event
+  callbacks and limits on movements and gestures to the map.
+- `StyleController.of(context)` rebuilds a widget when a style loads, or
+  its layers, sources or attributions change; `StyleController`,
+  `StyleLayers` and `StyleSources` are `Listenable`.
+- `MapAlign` stacks the widgets of `MapLibreMap.children` at one place of
+  the map, so that they don't overlap; `MapAlignItem` makes a widget one
+  that a `MapAlign` places.
 - Annotation layers take an optional `id`, which names their style layer and
   source ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
 - `Layer.anchor` places an annotation layer at the top or bottom of the style,
@@ -37,6 +48,8 @@
 
 ### Bug Fixes
 
+- `MapCompass` stays inside the safe area of the screen, like the other
+  widgets.
 - Taps, hovers and drags on annotation layers follow the layer when the list
   is reordered, and go to the layer drawn on top
   ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).

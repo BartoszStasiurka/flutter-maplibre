@@ -5,14 +5,56 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' hide Image;
 import 'package:maplibre_platform_interface/maplibre_platform_interface.dart';
+import 'package:maplibre_platform_interface/src/widget/inherited_model.dart';
 
 /// The [StyleController] can be used to manipulate the style of
-/// a [MapLibreMap]. It can be accessed via [MapController.style].
+/// a [MapLibreMap]. It can be accessed via [MapController.style], and in
+/// [MapLibreMap.children] via [StyleController.of].
+///
+/// It notifies its listeners when its [layers] or [sources] notify theirs,
+/// and when its [attributions] change. A newly loaded style is a new
+/// [StyleController].
 ///
 /// {@category Basic}
-abstract class StyleController {
+abstract class StyleController implements Listenable {
   /// Abstract base constructor for implementations.
-  const StyleController();
+  StyleController();
+
+  /// The [StyleController] of the closest [MapLibreMap] around [context],
+  /// or null if there is none or its style hasn't loaded yet.
+  ///
+  /// The widget of [context] rebuilds when a new style loads, when layers
+  /// or sources are added, removed or moved, and when the attributions
+  /// change. It doesn't rebuild when the properties of a layer or the data
+  /// of a source change, nor when the camera moves.
+  static StyleController? maybeOf(BuildContext context) =>
+      MapLibreInheritedModel.maybeStyleOf(context);
+
+  /// Like [maybeOf], but throws a [StateError] if there is no map or its
+  /// style hasn't loaded yet.
+  static StyleController of(BuildContext context) =>
+      maybeOf(context) ??
+      (throw StateError('Unable to find a loaded StyleController'));
+
+  final ValueNotifier<int> _attributionsChanged = ValueNotifier(0);
+
+  @override
+  void addListener(VoidCallback listener) {
+    layers.addListener(listener);
+    sources.addListener(listener);
+    _attributionsChanged.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    layers.removeListener(listener);
+    sources.removeListener(listener);
+    _attributionsChanged.removeListener(listener);
+  }
+
+  /// Notifies the listeners that [attributions] changed. Platforms call it.
+  @protected
+  void notifyAttributionsChanged() => _attributionsChanged.value++;
 
   /// The layers of the style, from bottom to top. Get, add, move and remove
   /// them here, and change their properties on the [StyleLayer] objects.
@@ -277,8 +319,9 @@ abstract class StyleController {
   /// https://maplibre.org/maplibre-style-spec/projection/
   void setProjection(Expression<MapProjection> projection);
 
-  /// Clean up resources.
-  void dispose();
+  /// Clean up resources. Implementations call `super.dispose()` last.
+  @mustCallSuper
+  void dispose() => _attributionsChanged.dispose();
 }
 
 /// The map projections of the style spec.
