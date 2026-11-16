@@ -1,6 +1,7 @@
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 import 'package:maplibre_native/src/darwin/bindings.g.dart';
 import 'package:maplibre_native/src/engine.dart';
 import 'package:maplibre_native/src/plugin_error.dart';
@@ -107,5 +108,70 @@ final class DarwinPlugin {
   static void disposeTexture(int textureId) =>
       _bindings.maplibre_native_dispose_texture(engineId, textureId);
 
+  /// Has the render sessions that attach from now on draw CJK ideographs,
+  /// kana and Hangul with the fonts of the CSS font-family list [fontFamily],
+  /// see `MapOptions.localIdeographFontFamily`. Null, or a list without
+  /// names, has them draw the style's glyphs.
+  static void setLocalIdeographFonts(String? fontFamily) => using((arena) {
+    final names = fontFamilyNames(fontFamily ?? '').join('\n');
+    _bindings.maplibre_native_set_local_ideograph_fonts(
+      names.toNativeUtf8(allocator: arena).cast(),
+    );
+  });
+
   static String _message(Pointer<Char> error) => pluginErrorMessage(error);
+}
+
+/// The font and family names of the CSS font-family list [fontFamily], in
+/// order. Names lose their quotes and backslash escapes, and quoted names
+/// keep their commas; the whitespace in unquoted names collapses to one
+/// space, as in CSS. Empty names are left out.
+@visibleForTesting
+List<String> fontFamilyNames(String fontFamily) {
+  final names = <String>[];
+  final name = StringBuffer();
+  String? quote;
+  var escaped = false;
+  var space = false;
+  void take() {
+    // The names reach the plugin one per line.
+    final value = name.toString().replaceAll(RegExp('[\r\n]'), ' ').trim();
+    if (value.isNotEmpty) names.add(value);
+    name.clear();
+    space = false;
+  }
+
+  void write(String char) {
+    // A run of whitespace in an unquoted name is one space, trimmed at the
+    // ends by take.
+    if (space && name.isNotEmpty) name.write(' ');
+    space = false;
+    name.write(char);
+  }
+
+  for (final char in fontFamily.split('')) {
+    if (escaped) {
+      escaped = false;
+      write(char);
+    } else if (char == r'\') {
+      escaped = true;
+    } else if (quote != null) {
+      if (char == quote) {
+        quote = null;
+      } else {
+        name.write(char);
+      }
+    } else if (char == '"' || char == "'") {
+      write('');
+      quote = char;
+    } else if (char == ',') {
+      take();
+    } else if (char.trim().isEmpty) {
+      space = true;
+    } else {
+      write(char);
+    }
+  }
+  take();
+  return names;
 }

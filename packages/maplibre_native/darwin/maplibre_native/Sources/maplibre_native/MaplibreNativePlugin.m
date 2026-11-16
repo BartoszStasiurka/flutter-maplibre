@@ -1,5 +1,6 @@
 #import "MaplibreNativePlugin.h"
 
+#import <CoreText/CoreText.h>
 #import <CoreVideo/CoreVideo.h>
 #import <IOSurface/IOSurfaceRef.h>
 #import <os/lock.h>
@@ -163,6 +164,8 @@ static const MaplibreNativeSymbol kSymbols[] = {
     {"maplibre_native_gpu_texture_slot_in_use",
      (void *)&maplibre_native_gpu_texture_slot_in_use},
     {"maplibre_native_dispose_texture", (void *)&maplibre_native_dispose_texture},
+    {"maplibre_native_set_local_ideograph_fonts",
+     (void *)&maplibre_native_set_local_ideograph_fonts},
     {NULL, NULL},
 };
 
@@ -322,4 +325,49 @@ void maplibre_native_dispose_texture(int64_t engine_id, int64_t texture_id) {
   RunOnMain(^{
     [registry unregisterTexture:texture_id];
   });
+}
+
+/// The family name of the system font, as MapLibre's iOS and macOS SDKs pass
+/// it by default (MLNRendererConfiguration). Core Text is safe to call off the
+/// main thread, unlike UIFont and NSFont.
+static NSString *SystemFontFamilyName(void) {
+  static NSString *family;
+  static dispatch_once_t once;
+  dispatch_once(&once, ^{
+    CTFontRef font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, NULL);
+    if (font == NULL) return;
+    family = CFBridgingRelease(CTFontCopyFamilyName(font));
+    CFRelease(font);
+  });
+  return family;
+}
+
+/// Whether |name| is a CSS generic family that the system font stands for.
+static BOOL IsSystemFamily(NSString *name) {
+  static NSSet<NSString *> *families;
+  static dispatch_once_t once;
+  dispatch_once(&once, ^{
+    families = [NSSet setWithArray:@[ @"sans-serif", @"system-ui", @"ui-sans-serif", @"-apple-system" ]];
+  });
+  return [families containsObject:name.lowercaseString];
+}
+
+void maplibre_native_set_local_ideograph_fonts(const char *font_names) {
+  NSMutableArray<NSString *> *names = [NSMutableArray array];
+  NSString *list = font_names == NULL ? nil : [NSString stringWithUTF8String:font_names];
+  for (NSString *line in [list componentsSeparatedByString:@"\n"]) {
+    NSString *name =
+        [line stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+    if (name.length == 0) continue;
+    NSString *font = IsSystemFamily(name) ? SystemFontFamilyName() : name;
+    if (font != nil) [names addObject:font];
+  }
+  // The rasterizer reads the key with -stringArrayForKey: and is on whenever
+  // that returns an array, even an empty one, so a value that is not a string
+  // array, @NO, turns it off. The registration domain lives as long as the
+  // process and is never written to the app's preferences on disk.
+  // NSUserDefaults is thread-safe.
+  id value = names.count > 0 ? names : @NO;
+  [NSUserDefaults.standardUserDefaults
+      registerDefaults:@{@"MLNIdeographicFontFamilyName" : value}];
 }

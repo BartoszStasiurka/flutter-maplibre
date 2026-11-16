@@ -193,6 +193,28 @@ void main() {
     test('leaves FastPFOR decoding off by default, as MapLibre Native', () {
       expect(const MapOptions().fastPforEnabled, isFalse);
     });
+
+    test('draws CJK with the device fonts by default, as gl-js', () {
+      expect(const MapOptions().localIdeographFontFamily, 'sans-serif');
+    });
+
+    test('compares the local ideograph fonts', () {
+      const local = MapOptions(localIdeographFontFamily: 'Hiragino Sans');
+      expect(
+        local,
+        const MapOptions(localIdeographFontFamily: 'Hiragino Sans'),
+      );
+      expect(
+        local.hashCode,
+        const MapOptions(localIdeographFontFamily: 'Hiragino Sans').hashCode,
+      );
+      expect(local, isNot(const MapOptions()));
+      expect(
+        const MapOptions(localIdeographFontFamily: null),
+        isNot(const MapOptions()),
+      );
+      expect(local, isNot(const MapOptions(localIdeographFontFamily: 'serif')));
+    });
   });
 
   group('CameraPosition', () {

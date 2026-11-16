@@ -23,6 +23,10 @@ import 'package:web/web.dart' hide PointerEvent;
 
 part 'style_controller.dart';
 
+/// Matches a CSS font-family list without names: only commas, quotes and
+/// whitespace.
+final _noFontNames = RegExp(r'''^[\s,'"]*$''');
+
 /// The web specific implementation of the [MapLibreMap] widget.
 final class MapLibreMapStateWeb extends MapLibreMapState {
   late HTMLDivElement _htmlElement;
@@ -97,16 +101,22 @@ final class MapLibreMapStateWeb extends MapLibreMapState {
         // widgets over the map keep theirs.
         ..style.pointerEvents = 'none';
 
-      _map = interop.JsMap(
-        interop.MapOptions(
-          container: _htmlElement,
-          style: _jsStyle(options.style),
-          attributionControl: false,
-          // MapGestureDetector handles the input.
-          interactive: false,
-          transformRequest: _transformRequest.toJS,
-        ),
+      final mapOptions = interop.MapOptions(
+        container: _htmlElement,
+        style: _jsStyle(options.style),
+        attributionControl: false,
+        // MapGestureDetector handles the input.
+        interactive: false,
+        transformRequest: _transformRequest.toJS,
       );
+      // gl-js draws the style's glyphs for `false`. A list without names,
+      // such as `''`, would otherwise turn local drawing on with no font.
+      final fontFamily = options.localIdeographFontFamily?.trim();
+      mapOptions.localIdeographFontFamily =
+          fontFamily == null || _noFontNames.hasMatch(fontFamily)
+          ? false.toJS
+          : fontFamily.toJS;
+      _map = interop.JsMap(mapOptions);
       // gl-js's default if its private field is gone.
       _placementFadeDuration = _map.fadeDuration ?? 300;
       _mapCreated = true;
