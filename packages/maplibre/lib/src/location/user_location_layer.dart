@@ -1,23 +1,28 @@
 import 'dart:async';
-import 'dart:math';
 
-import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:maplibre/maplibre.dart';
-
-/// Meters per degree of latitude.
-const _metersPerDegree = 111320.0;
+import 'package:maplibre/src/location/user_location_style_layers.dart';
 
 /// Shows the user location on the [MapLibreMap] by using it in
 /// [MapLibreMap.children], and moves the camera with it while [tracking].
+/// It is a [MapPlugin] of the map.
 ///
 /// The layer takes its locations from a stream, so it works the same on
 /// every platform and with any location source. It asks for no permission;
 /// use a package such as `permission_handler` or `geolocator` for that, and
 /// `maplibre_geolocator` to turn `geolocator` positions into locations.
 ///
-/// A drag or scroll wheel zoom on the map stops the tracking and reports
-/// [UserLocationTracking.none] to [onTrackingChanged].
+/// A gesture that moves the map, such as a drag, a pinch or a scroll wheel
+/// zoom, stops the tracking and reports [UserLocationTracking.none] to
+/// [onTrackingChanged].
+///
+/// The location shows as a dot, a circle of its accuracy and a cone of its
+/// heading, which [style] changes. They are style layers of the map, so the
+/// map draws them in the same frame as everything else, and the accuracy and
+/// the heading lie flat on a tilted map. [anchor] places them among the
+/// layers of the style, for example below its labels.
 ///
 /// {@category Location}
 class UserLocationLayer extends StatefulWidget {
@@ -28,8 +33,9 @@ class UserLocationLayer extends StatefulWidget {
     this.onTrackingChanged,
     this.trackingZoom,
     this.trackingDuration = const Duration(milliseconds: 500),
-    this.color = const Color(0xFF1A73E8),
-    this.radius = 8,
+    this.style = const UserLocationStyle(),
+    this.anchor = const LayerAnchor.top(),
+    this.onClick,
     super.key,
   });
 
@@ -49,11 +55,15 @@ class UserLocationLayer extends StatefulWidget {
   /// How long the camera takes to follow a new location.
   final Duration trackingDuration;
 
-  /// The color of the location dot, its accuracy circle and its heading.
-  final Color color;
+  /// How the location is drawn.
+  final UserLocationStyle style;
 
-  /// The radius of the location dot in logical pixels.
-  final double radius;
+  /// Where the layers of the location go among the layers of the style, on
+  /// top of them by default, see [Layer.anchor].
+  final LayerAnchor anchor;
+
+  /// Called when the user taps or clicks the location.
+  final ValueChanged<UserLocation>? onClick;
 
   @override
   State<UserLocationLayer> createState() => _UserLocationLayerState();
@@ -68,13 +78,27 @@ class _UserLocationLayerState extends State<UserLocationLayer> {
   /// started, so [UserLocationLayer.trackingZoom] applies only once.
   var _tracked = false;
 
-  /// Where each pointer on the map went down, to tell a drag from a tap.
-  final _downPositions = <int, Offset>{};
+  /// The PNGs of the heading cone, by color, the most recently used last.
+  static final _headingImages = <Color, Future<Uint8List>>{};
+
+  /// How many colors [_headingImages] keeps.
+  static const _maxHeadingImages = 8;
+
+  /// The heading cone in the color of [UserLocationLayer.style], once it is
+  /// drawn.
+  Uint8List? _headingImage;
+  Color? _headingColor;
+
+  /// The layers that show the location, which change only with the location,
+  /// the widget and the heading image, so that a rebuild of the parent hands
+  /// the plugin the same layers.
+  List<Layer> _layers = const [];
 
   @override
   void initState() {
     super.initState();
     _subscribe();
+    _loadHeadingImage();
   }
 
   @override
@@ -89,6 +113,12 @@ class _UserLocationLayerState extends State<UserLocationLayer> {
       _tracked = false;
       _follow();
     }
+    if (widget.style != oldWidget.style ||
+        widget.anchor != oldWidget.anchor ||
+        (widget.onClick == null) != (oldWidget.onClick == null)) {
+      _loadHeadingImage();
+      _updateLayers();
+    }
   }
 
   @override
@@ -100,7 +130,10 @@ class _UserLocationLayerState extends State<UserLocationLayer> {
   void _subscribe() {
     _subscription = widget.locations.listen((location) {
       if (!mounted) return;
-      setState(() => _location = location);
+      setState(() {
+        _location = location;
+        _updateLayers();
+      });
       _follow();
     });
   }
@@ -130,139 +163,83 @@ class _UserLocationLayerState extends State<UserLocationLayer> {
     );
   }
 
-  void _stopTracking() {
-    if (_tracking == UserLocationTracking.none) return;
+  /// Stops the tracking when the user moves the map.
+  void _onCameraMoveStart(MapEventCameraMoveStart event) {
+    if (event.reason != CameraChangeReason.gesture ||
+        _tracking == UserLocationTracking.none) {
+      return;
+    }
     _tracking = UserLocationTracking.none;
     widget.onTrackingChanged?.call(UserLocationTracking.none);
   }
 
-  void _onPointerDown(PointerDownEvent event) =>
-      _downPositions[event.pointer] = event.localPosition;
-
-  void _onPointerMove(PointerMoveEvent event) {
-    final down = _downPositions[event.pointer];
-    if (down == null) return;
-    if ((event.localPosition - down).distance > kTouchSlop) _stopTracking();
+  /// Reports a tap on the location. A method, so that the layers of every
+  /// location get the same callback.
+  void _onClick(LayerFeatureEvent event) {
+    if (_location case final location?) widget.onClick?.call(location);
   }
 
-  void _onPointerEnd(PointerEvent event) =>
-      _downPositions.remove(event.pointer);
-
-  void _onPointerSignal(PointerSignalEvent event) {
-    if (event is PointerScrollEvent || event is PointerScaleEvent) {
-      _stopTracking();
+  /// Draws the heading cone in the color of [UserLocationLayer.style], once
+  /// per color.
+  void _loadHeadingImage() {
+    final style = widget.style;
+    if (!style.showHeading) return;
+    final color = style.color;
+    if (_headingColor == color) return;
+    _headingColor = color;
+    _headingImage = null;
+    // Reinserting the color makes it the most recently used.
+    final image = _headingImages.remove(color) ?? drawHeadingImage(color);
+    _headingImages[color] = image;
+    while (_headingImages.length > _maxHeadingImages) {
+      _headingImages.remove(_headingImages.keys.first);
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = MapController.maybeOf(context);
-    final camera = CameraPosition.maybeOf(context);
-    final location = _location;
-    _UserLocationPainter? painter;
-    if (controller != null && camera != null && location != null) {
-      final accuracy = location.accuracy;
-      // The screen distance to a point the accuracy north, so the circle
-      // follows the zoom, the latitude and the projection.
-      final points = controller.toScreenLocations([
-        location.position,
-        if (accuracy != null && accuracy > 0)
-          Geographic(
-            lon: location.position.lon,
-            lat: min(90, location.position.lat + accuracy / _metersPerDegree),
-          ),
-      ]);
-      final heading = location.heading;
-      painter = _UserLocationPainter(
-        center: points.first,
-        accuracyRadius: points.length > 1
-            ? (points[1] - points[0]).distance
-            : 0,
-        heading: heading == null ? null : heading - camera.bearing,
-        color: widget.color,
-        radius: widget.radius,
-      );
-    }
-    // Translucent, so the map behind still gets every pointer.
-    return Positioned.fill(
-      child: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: _onPointerDown,
-        onPointerMove: _onPointerMove,
-        onPointerUp: _onPointerEnd,
-        onPointerCancel: _onPointerEnd,
-        onPointerSignal: _onPointerSignal,
-        child: IgnorePointer(child: CustomPaint(painter: painter)),
+    unawaited(
+      image.then(
+        (bytes) {
+          if (mounted && _headingColor == color) {
+            setState(() {
+              _headingImage = bytes;
+              _updateLayers();
+            });
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          // A later layer of this color draws it again.
+          if (identical(_headingImages[color], image)) {
+            _headingImages.remove(color);
+          }
+          if (mounted && _headingColor == color) _headingColor = null;
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              exception: error,
+              stack: stack,
+              library: 'maplibre',
+              context: ErrorDescription(
+                'while drawing the user location heading',
+              ),
+            ),
+          );
+        },
       ),
     );
   }
-}
 
-class _UserLocationPainter extends CustomPainter {
-  const _UserLocationPainter({
-    required this.center,
-    required this.accuracyRadius,
-    required this.heading,
-    required this.color,
-    required this.radius,
-  });
-
-  final Offset center;
-  final double accuracyRadius;
-
-  /// The heading on screen, in degrees clockwise from up.
-  final double? heading;
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (accuracyRadius > radius) {
-      canvas
-        ..drawCircle(
-          center,
-          accuracyRadius,
-          Paint()..color = color.withValues(alpha: 0.15),
-        )
-        ..drawCircle(
-          center,
-          accuracyRadius,
-          Paint()
-            ..color = color.withValues(alpha: 0.4)
-            ..style = PaintingStyle.stroke,
-        );
-    }
-    if (heading case final double heading) {
-      // A cone of 60 degrees toward the heading.
-      final direction = (heading - 90) * pi / 180;
-      final length = radius * 4;
-      final cone = Path()
-        ..moveTo(center.dx, center.dy)
-        ..arcTo(
-          Rect.fromCircle(center: center, radius: length),
-          direction - pi / 6,
-          pi / 3,
-          false,
-        )
-        ..close();
-      canvas.drawPath(
-        cone,
-        Paint()
-          ..shader = RadialGradient(
-            colors: [color.withValues(alpha: 0.5), color.withValues(alpha: 0)],
-          ).createShader(Rect.fromCircle(center: center, radius: length)),
-      );
-    }
-    canvas
-      ..drawCircle(center, radius + 2, Paint()..color = const Color(0xFFFFFFFF))
-      ..drawCircle(center, radius, Paint()..color = color);
+  /// Makes the layers that show the location.
+  void _updateLayers() {
+    final location = _location;
+    _layers = location == null
+        ? const []
+        : userLocationStyleLayers(
+            location: location,
+            style: widget.style,
+            anchor: widget.anchor,
+            onClick: widget.onClick == null ? null : _onClick,
+            headingImage: _headingImage,
+          );
   }
 
   @override
-  bool shouldRepaint(_UserLocationPainter oldDelegate) =>
-      center != oldDelegate.center ||
-      accuracyRadius != oldDelegate.accuracyRadius ||
-      heading != oldDelegate.heading ||
-      color != oldDelegate.color ||
-      radius != oldDelegate.radius;
+  Widget build(BuildContext context) =>
+      MapPlugin(onCameraMoveStart: _onCameraMoveStart, layers: _layers);
 }

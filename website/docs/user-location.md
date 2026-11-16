@@ -111,8 +111,39 @@ Widget build(BuildContext context) {
 ```
 
 `trackingZoom` is the zoom the camera moves to when tracking starts, and
-`trackingDuration` how long it takes to follow a new location. `color` and
-`radius` change the look of the dot.
+`trackingDuration` how long it takes to follow a new location.
+
+## Style
+
+`style` changes how the location looks, with a `UserLocationStyle`:
+
+```dart
+UserLocationLayer(
+  locations: locations,
+  style: const UserLocationStyle(
+    color: Color(0xFF2E7D32),
+    radius: 10,
+    showAccuracy: false,
+  ),
+  // Below the labels of the style.
+  anchor: const LayerAnchor.below('place_label'),
+  onClick: (location) => print('Tapped my location'),
+)
+```
+
+- `color` and `radius` set the dot, and the accuracy circle and the heading
+  take the color too.
+- `showAccuracy` and `showHeading` hide the accuracy circle and the heading
+  cone.
+- `icon` replaces the dot, for example with an arrow. While `rotateIcon` is
+  set, it turns with the heading and shows it instead of the cone; otherwise
+  it stays upright on the screen.
+
+The location is drawn with style layers of the map, so the map draws it in
+the same frame as everything else and it never trails the camera. It moves
+from one location to the next without an animation in between. The
+accuracy circle and the heading lie flat on a tilted map. `anchor` places the
+layers among those of the style, and `onClick` reports taps on the location.
 
 Check out the
 [example app](https://github.com/maplibre/flutter-maplibre/blob/main/examples/lib/user_location_page.dart)

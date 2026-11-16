@@ -15,6 +15,8 @@
 - The style layers of `MapLibreMap.layers` can no longer be removed or moved
   through `StyleController.layers`
   ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
+- `UserLocationLayer.style` (`UserLocationStyle`) replaces
+  `UserLocationLayer.color` and `radius`.
 
 ### Features
 
@@ -45,11 +47,17 @@
   ([#611](https://github.com/maplibre/flutter-maplibre/issues/611)).
 - A pinch rotates the map only after its fingers twist 15 degrees, set with
   `MapGestures.rotateThreshold`.
+- `UserLocationLayer` draws the location with style layers of the map, which
+  never trail the camera and lie flat on a tilted map. Its style can hide the
+  accuracy and the heading or replace the dot with an icon, `anchor` places
+  it among the layers of the style, and `onClick` reports taps on it.
 
 ### Bug Fixes
 
 - `MapCompass` stays inside the safe area of the screen, like the other
   widgets.
+- Removing a map while an icon of its annotation layers still loads no
+  longer throws.
 - Taps, hovers and drags on annotation layers follow the layer when the list
   is reordered, and go to the layer drawn on top
   ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).

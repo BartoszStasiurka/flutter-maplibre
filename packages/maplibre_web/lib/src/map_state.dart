@@ -396,6 +396,8 @@ final class MapLibreMapStateWeb extends MapLibreMapState {
     _endAnimation(CameraAnimationResult.cancelled);
     document.removeEventListener('contextmenu', _onContextMenu);
     _contextMenuTimer?.cancel();
+    // Pending annotation work must not reach the map once it is gone.
+    detachAnnotations();
     style?.dispose();
     if (_mapCreated) {
       _map.remove();

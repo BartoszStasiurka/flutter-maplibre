@@ -62,6 +62,35 @@ void runTests() {
       expect(start.reason, CameraChangeReason.gesture);
     });
 
+    testWidgets('a drag during a camera animation reports a gesture start', (
+      tester,
+    ) async {
+      // UserLocationLayer stops tracking on this event, while its camera
+      // animation still runs.
+      final map = await pumpMap(tester, options: _options());
+      final since = map.events.length;
+      final animation = map.controller.animateCamera(
+        const CameraUpdate.position(center: Geographic(lon: 20, lat: 50)),
+        animation: const CameraAnimation.fly(duration: Duration(seconds: 10)),
+      );
+      final programmatic = await map.waitForEvent<MapEventCameraMoveStart>(
+        since: since,
+      );
+      expect(programmatic.reason, CameraChangeReason.programmatic);
+      final afterStart = map.events.length;
+      final gesture = await tester.startGesture(map.toGlobal(map.center));
+      for (var i = 0; i < 5; i++) {
+        await gesture.moveBy(const Offset(-20, 0));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      final start = await map.waitForEvent<MapEventCameraMoveStart>(
+        since: afterStart,
+      );
+      expect(start.reason, CameraChangeReason.gesture);
+      await gesture.up();
+      expect(await animation, CameraAnimationResult.cancelled);
+    });
+
     testWidgets('pan momentum continues after release and tap stops it', (
       tester,
     ) async {

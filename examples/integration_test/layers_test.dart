@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -460,6 +461,48 @@ void runTests() {
         ),
       );
       await map.waitForFeatures(map.center, (features) => features.length == 1);
+    });
+  });
+
+  group('user location', () {
+    testWidgets('draws the marker with style layers and removes them', (
+      tester,
+    ) async {
+      final locations = StreamController<UserLocation>();
+      addTearDown(locations.close);
+      final options = offlineOptions(zoom: 14);
+      final map = await pumpMap(
+        tester,
+        options: options,
+        children: [UserLocationLayer(locations: locations.stream)],
+      );
+      locations.add(
+        const UserLocation(position: _point, accuracy: 500, heading: 90),
+      );
+      // The accuracy circle, the heading cone and the dot, once the image
+      // of the heading is drawn.
+      await map.waitForFeatures(
+        map.center,
+        (features) => {for (final f in features) f.layerId}.length == 3,
+      );
+      expect(map.style.layers.skip(1).map((layer) => layer.type), [
+        'circle',
+        'symbol',
+        'circle',
+      ]);
+      // 500 m are about 105 px at zoom 14 on the equator, so the accuracy
+      // circle covers a point 40 px away, which the dot and the heading,
+      // 32 px long, do not.
+      await map.waitForFeatures(
+        map.center + const Offset(40, 0),
+        (features) => {for (final f in features) f.layerId}.length == 1,
+      );
+
+      await tester.pumpWidget(MapApp(options: options));
+      await map.waitForFeatures(map.center, (features) => features.isEmpty);
+      expect(map.style.layers.map((layer) => layer.id).toList(), [
+        'background',
+      ]);
     });
   });
 }

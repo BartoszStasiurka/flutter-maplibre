@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre/maplibre.dart';
 import 'package:material_ui/material_ui.dart';
@@ -15,10 +14,6 @@ const _camera = CameraPosition(
   bearing: 30,
   pitch: 0,
 );
-
-/// A screen at 1 px per 0.001 degrees, centered on (0, 0) at (400, 300).
-Offset _toScreen(Geographic point) =>
-    Offset(400 + point.lon * 1000, 300 - point.lat * 1000);
 
 void main() {
   setUpAll(() {
@@ -36,12 +31,6 @@ void main() {
       controller = MockMapController();
       locations = StreamController<UserLocation>();
       trackingChanges = [];
-      when(() => controller.toScreenLocations(any())).thenAnswer(
-        (invocation) =>
-            (invocation.positionalArguments.single as List<Geographic>)
-                .map(_toScreen)
-                .toList(),
-      );
       when(
         () =>
             controller.animateCamera(any(), animation: any(named: 'animation')),
@@ -54,6 +43,9 @@ void main() {
       WidgetTester tester, {
       UserLocationTracking tracking = UserLocationTracking.none,
       double? trackingZoom,
+      UserLocationStyle style = const UserLocationStyle(),
+      LayerAnchor anchor = const LayerAnchor.top(),
+      ValueChanged<UserLocation>? onClick,
     }) => tester.pumpWidget(
       App(
         camera: _camera,
@@ -64,6 +56,9 @@ void main() {
             tracking: tracking,
             trackingZoom: trackingZoom,
             onTrackingChanged: trackingChanges.add,
+            style: style,
+            anchor: anchor,
+            onClick: onClick,
           ),
         ],
       ),
@@ -73,70 +68,6 @@ void main() {
       locations.add(location);
       await tester.pump();
     }
-
-    RenderObject layer(WidgetTester tester) => tester.renderObject(
-      find.descendant(
-        of: find.byType(UserLocationLayer),
-        matching: find.byType(CustomPaint),
-      ),
-    );
-
-    testWidgets('paints nothing before the first location', (tester) async {
-      await pump(tester);
-      expect(layer(tester), paintsNothing);
-    });
-
-    testWidgets('paints the dot at the screen location', (tester) async {
-      await pump(tester);
-      await add(
-        tester,
-        const UserLocation(position: Geographic(lon: 0.1, lat: 0.05)),
-      );
-      expect(
-        layer(tester),
-        paints
-          ..circle(x: 500, y: 250, radius: 10, color: Colors.white)
-          ..circle(x: 500, y: 250, radius: 8),
-      );
-    });
-
-    testWidgets('paints the accuracy in meters', (tester) async {
-      await pump(tester);
-      // 111.32 m north is 0.001 degrees, 1 px here: 2226.4 m is 20 px.
-      await add(
-        tester,
-        const UserLocation(
-          position: Geographic(lon: 0, lat: 0),
-          accuracy: 2226.4,
-        ),
-      );
-      expect(
-        layer(tester),
-        paints..something(
-          (method, arguments) =>
-              method == #drawCircle &&
-              arguments[0] == const Offset(400, 300) &&
-              ((arguments[1] as double) - 20).abs() < 1e-6,
-        ),
-      );
-    });
-
-    testWidgets('paints the heading against the bearing', (tester) async {
-      await pump(tester);
-      await add(
-        tester,
-        const UserLocation(position: Geographic(lon: 0, lat: 0), heading: 120),
-      );
-      // The cone points 90 degrees clockwise from up on screen, to the
-      // right, so it covers a point there but none to the left.
-      expect(
-        layer(tester),
-        paints..path(
-          includes: [const Offset(420, 300)],
-          excludes: [const Offset(380, 300)],
-        ),
-      );
-    });
 
     testWidgets('does not move the camera without tracking', (tester) async {
       await pump(tester);
@@ -214,11 +145,25 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('a drag stops the tracking, a tap does not', (tester) async {
+    MapPlugin plugin(WidgetTester tester) => tester.widget(
+      find.descendant(
+        of: find.byType(UserLocationLayer),
+        matching: find.byType(MapPlugin),
+      ),
+    );
+
+    testWidgets('a gesture stops the tracking, a camera call does not', (
+      tester,
+    ) async {
       await pump(tester, tracking: UserLocationTracking.position);
-      await tester.tapAt(const Offset(400, 300));
+      final onCameraMoveStart = plugin(tester).onCameraMoveStart!;
+      onCameraMoveStart(
+        const MapEventCameraMoveStart(reason: CameraChangeReason.programmatic),
+      );
       expect(trackingChanges, isEmpty);
-      await tester.dragFrom(const Offset(400, 300), const Offset(100, 0));
+      onCameraMoveStart(
+        const MapEventCameraMoveStart(reason: CameraChangeReason.gesture),
+      );
       expect(trackingChanges, [UserLocationTracking.none]);
       clearInteractions(controller);
       await add(
@@ -231,12 +176,63 @@ void main() {
       );
     });
 
-    testWidgets('a scroll wheel stops the tracking', (tester) async {
-      await pump(tester, tracking: UserLocationTracking.position);
-      final pointer = TestPointer(1, PointerDeviceKind.mouse);
-      await tester.sendEventToBinding(pointer.hover(const Offset(400, 300)));
-      await tester.sendEventToBinding(pointer.scroll(const Offset(0, -100)));
-      expect(trackingChanges, [UserLocationTracking.none]);
+    testWidgets('hands the plugin the layers of the location', (tester) async {
+      await pump(tester);
+      expect(plugin(tester).layers, isEmpty);
+      await add(
+        tester,
+        const UserLocation(position: Geographic(lon: 1, lat: 2), accuracy: 10),
+      );
+      final layers = plugin(tester).layers;
+      // The accuracy circle and the dot.
+      expect(layers, hasLength(2));
+      // A rebuild keeps the layers while the location stays.
+      await tester.pump();
+      expect(plugin(tester).layers, same(layers));
+
+      await pump(tester, style: const UserLocationStyle(showAccuracy: false));
+      expect(plugin(tester).layers, hasLength(1));
+    });
+
+    testWidgets('keeps the layers when the parent passes a new onClick', (
+      tester,
+    ) async {
+      final clicks = <UserLocation>[];
+      const location = UserLocation(position: Geographic(lon: 1, lat: 2));
+      // A closure, as apps write it inline, is a new callback per build.
+      // ignore: unnecessary_lambdas
+      await pump(tester, onClick: (location) => clicks.add(location));
+      await add(tester, location);
+      final layers = plugin(tester).layers;
+      // ignore: unnecessary_lambdas
+      await pump(tester, onClick: (location) => clicks.add(location));
+      expect(plugin(tester).layers, same(layers));
+
+      layers.single.onClick!(
+        const LayerFeatureEvent(
+          index: 0,
+          feature: Feature(geometry: Point(Geographic(lon: 1, lat: 2))),
+          geometry: Point(Geographic(lon: 1, lat: 2)),
+          point: Geographic(lon: 1, lat: 2),
+          screenPoint: Offset.zero,
+        ),
+      );
+      expect(clicks, [location]);
+
+      await pump(tester);
+      expect(plugin(tester).layers.single.onClick, isNull);
+    });
+
+    testWidgets('places the layers at the anchor', (tester) async {
+      await pump(tester, anchor: const LayerAnchor.below('labels'));
+      await add(
+        tester,
+        const UserLocation(position: Geographic(lon: 1, lat: 2), accuracy: 10),
+      );
+      expect(
+        plugin(tester).layers.map((layer) => layer.anchor),
+        everyElement(const LayerAnchor.below('labels')),
+      );
     });
 
     testWidgets('lets pointers through to the map', (tester) async {

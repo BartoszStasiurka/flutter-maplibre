@@ -221,6 +221,8 @@ class MapLibreMapStateNative extends MapLibreMapState {
     _disposed = true;
     _animation?.end(CameraAnimationResult.cancelled);
     _animation = null;
+    // Pending annotation work must not reach the map once it is gone.
+    detachAnnotations();
     style?.dispose();
     _loadingStyle?.dispose();
     _invalidateProjection();
@@ -877,8 +879,13 @@ class _NativeGestureCamera implements GestureCameraSink {
 
   @override
   void gestureStart() {
+    // Ends a running camera animation or fling as its own move, so that the
+    // gesture starts a move of its own with the reason gesture. The runtime
+    // reports the end of the cancelled transition only later, once the
+    // gesture is active, which would otherwise keep the old move going.
     _state
       .._cancelAnimation()
+      .._onCameraIdle()
       .._gestureActive = true
       .._nextChangeReason = CameraChangeReason.gesture;
     _state._applyDelta(
