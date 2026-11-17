@@ -1,87 +1,61 @@
-## Unreleased
+## 0.4.0-pre.3
+
+`maplibre` is now a MapLibre
+[hosted project](https://github.com/maplibre/maplibre/blob/main/PROJECT_TIERS.md#hosted-project):
+the repository moved to
+[maplibre/flutter-maplibre](https://github.com/maplibre/flutter-maplibre) and
+the website to <https://maplibre.org/flutter-maplibre>.
+
+This pre-release adds the last breaking changes for v0.4. It reworks the
+annotation layers, the user location and the widgets in `children`, and drops
+the Material dependency of the UI widgets. The
+[migration guide](https://maplibre.org/flutter-maplibre/docs/migrate/upgrade-from-v0.3.x/)
+covers every change from 0.3.x and from the earlier pre-releases.
 
 ### Breaking Changes
 
-- Widgets that call only `MapController.of` or `MapOptions.of` no longer
-  rebuild while the camera moves; read `CameraPosition.of` for what depends
-  on the camera.
-- `MapCompass`, `MapControlButtons`, `MapScalebar` and `SourceAttribution` no
-  longer depend on Material and no longer follow the app's `Theme`; set their
-  new color and text style parameters instead
+- UI widgets such as `MapCompass` and `MapScalebar` no longer follow the app's
+  `Theme`; style them with their color and text style parameters
   ([#671](https://github.com/maplibre/flutter-maplibre/issues/671)).
-- `MarkerLayer.icon` replaces `MarkerLayer.iconImage`; use `.named()` or
-  `.expression()` for images of the style
+- Annotation layers: `MarkerLayer.icon` replaces `iconImage`, and their style
+  layers can't be removed or moved through `StyleController.layers`
   ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
-- The style layers of `MapLibreMap.layers` can no longer be removed or moved
-  through `StyleController.layers`
-  ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
-- `UserLocationLayer.style` (`UserLocationStyle`) replaces
-  `UserLocationLayer.color` and `radius`.
+- `UserLocationLayer.style` replaces its `color` and `radius`.
+- Widgets that read only `MapController.of` or `MapOptions.of` no longer
+  rebuild while the camera moves; read `CameraPosition.of` for that.
 
 ### Features
 
-- `MapLibreMap.withCamera` lets the app drive the camera: the map applies each
-  new camera while the widget builds, in the same browser frame as the
-  widgets on web.
-- `MapPlugin` lets a widget in `MapLibreMap.children` add layers, event
-  callbacks and limits on movements and gestures to the map.
-- `StyleController.of(context)` rebuilds a widget when a style loads, or
-  its layers, sources or attributions change; `StyleController`,
-  `StyleLayers` and `StyleSources` are `Listenable`.
-- `MapAlign` stacks the widgets of `MapLibreMap.children` at one place of
-  the map, so that they don't overlap; `MapAlignItem` makes a widget one
-  that a `MapAlign` places.
-- Annotation layers take an optional `id`, which names their style layer and
-  source ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
-- `Layer.anchor` places an annotation layer at the top or bottom of the style,
-  or below or above one of its layers
-  ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
-- `MarkerLayer.icon` adds the image of the markers to every style, from an
-  icon, an asset, bytes or an `ImageProvider`
-  ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
-- `LayerFeatureEvent.feature` is the feature that a tap, hover or drag hit
-  ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
-- `MapOptions.localIdeographFontFamily` draws CJK ideographs, kana and Hangul
-  with the device's fonts instead of the style's glyphs, on by default with
-  `'sans-serif'`; null draws the style's glyphs. Only on iOS, macOS and web
+- Annotation layers keep their place across style changes and take an `id`,
+  an `anchor` in the style, and marker icons from icons, assets, bytes or
+  images ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
+- `UserLocationLayer` draws with style layers, so it never trails the camera
+  and lies flat on a tilted map, and can show an icon and report taps.
+- `MapPlugin` and `MapAlign` let widgets in `children` add layers, callbacks
+  and limits to the map, and share a corner with the built-in widgets.
+- `MapLibreMap.withCamera` lets the app drive the camera while it builds.
+- CJK text with the device's fonts, on iOS, macOS and web
   ([#663](https://github.com/maplibre/flutter-maplibre/issues/663)).
-- `StyleController.setPlacementTransitions` turns the fade of labels whose
-  placement changes off and on
-  ([#611](https://github.com/maplibre/flutter-maplibre/issues/611)).
-- A pinch rotates the map only after its fingers twist 15 degrees, set with
-  `MapGestures.rotateThreshold`.
-- `UserLocationLayer` draws the location with style layers of the map, which
-  never trail the camera and lie flat on a tilted map. Its style can hide the
-  accuracy and the heading or replace the dot with an icon, `anchor` places
-  it among the layers of the style, and `onClick` reports taps on it.
+- Label fade transitions can be turned off
+  ([#611](https://github.com/maplibre/flutter-maplibre/issues/611)), and a
+  pinch rotates only after a twist threshold.
 
 ### Bug Fixes
 
-- `MapCompass` stays inside the safe area of the screen, like the other
-  widgets.
-- Removing a map while an icon of its annotation layers still loads no
-  longer throws.
-- Taps, hovers and drags on annotation layers follow the layer when the list
-  is reordered, and go to the layer drawn on top
-  ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
-- Widgets around `MapLibreMap`, such as a `Listener`, get the map's pointer
-  events again, and widgets behind the map no longer get its taps
+- Layer taps, hovers and drags follow reordered layers and hit the one drawn
+  on top ([#674](https://github.com/maplibre/flutter-maplibre/issues/674)).
+- Widgets around the map get its pointer events again, and widgets behind it
+  no longer get its taps
   ([#675](https://github.com/maplibre/flutter-maplibre/issues/675)).
-- Maps no longer turn black when the app runs a second Flutter engine, such
-  as one of a background service, and that engine stops; not on web
+- Maps keep rendering when the app runs a second Flutter engine, such as a
+  background service; not on web
   ([#677](https://github.com/maplibre/flutter-maplibre/issues/677)).
-- Two fingers resting on the map before a pinch, twist or tilt are no longer a
-  long click, which kept the pinch from moving the camera; a long click is a
-  hold of one finger
-  ([#681](https://github.com/josxha/flutter-maplibre/issues/681)).
+- Two fingers resting on the map no longer count as a long click, so pinches
+  start right away
+  ([#681](https://github.com/maplibre/flutter-maplibre/issues/681)).
+- `MapCompass` stays inside the safe area.
 
-### Misc
-
-- `maplibre` is now a MapLibre hosted project: the repository moved to
-  [maplibre/flutter-maplibre](https://github.com/maplibre/flutter-maplibre) and
-  the website to <https://maplibre.org/flutter-maplibre>.
-
-Full Changelog: [v0.4.0-pre.2...main](https://github.com/maplibre/flutter-maplibre/compare/v0.4.0-pre.2...main)
+Full Changelog: [v0.4.0-pre.2...v0.4.0-pre.3](https://github.com/maplibre/flutter-maplibre/compare/v0.4.0-pre.2...v0.4.0-pre.3)
 
 ## 0.4.0-pre.2
 

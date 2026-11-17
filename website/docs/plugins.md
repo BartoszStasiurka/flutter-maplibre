@@ -120,7 +120,7 @@ built-in widgets without overlapping. See
 | Package                                                               | What it does                                                                                                                                   |
 | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | [maplibre_geolocator](https://pub.dev/packages/maplibre_geolocator)   | Turns the positions of [geolocator](https://pub.dev/packages/geolocator) into the location stream of the [UserLocationLayer](user-location.md) plugin. |
-| [flutter_map_maplibre](https://pub.dev/packages/flutter_map_maplibre) | Shows a MapLibre map with vector tiles in [flutter_map](https://pub.dev/packages/flutter_map). Its current release needs maplibre 0.3.          |
+| [flutter_map_maplibre](https://pub.dev/packages/flutter_map_maplibre) | Shows [flutter_map](https://pub.dev/packages/flutter_map) layers on a maplibre map, or a maplibre map as a vector layer in flutter_map. |
 
 Built a plugin or another package for maplibre? Open a pull request to add
 it here.

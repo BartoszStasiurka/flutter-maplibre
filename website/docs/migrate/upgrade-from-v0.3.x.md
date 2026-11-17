@@ -16,7 +16,7 @@ guide applies to the `0.4.0-pre.*` pre-releases and to 0.4.0. The
 
 ```yaml title="pubspec.yaml"
 dependencies:
-  maplibre: ^0.4.0-pre.2
+  maplibre: ^0.4.0-pre.3
 ```
 
 The packages need Dart 3.13 and Flutter 3.47 or newer.
@@ -248,6 +248,16 @@ removed. Show the location with a [UserLocationLayer](../user-location.md)
 and ask for permissions with `geolocator` or `permission_handler`.
 `MapControlButtons` takes `tracking` and `onTrackingPressed` instead of
 `showTrackLocation`.
+
+From the 0.4 pre-releases: `UserLocationLayer.style` takes a
+`UserLocationStyle`, which replaces the layer's `color` and `radius`:
+
+```dart
+UserLocationLayer(
+  locations: locations,
+  style: const UserLocationStyle(color: Color(0xFF2E7D32), radius: 10),
+)
+```
 
 ## 11. Offline regions
 
