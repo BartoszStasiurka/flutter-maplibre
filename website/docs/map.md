@@ -101,6 +101,30 @@ needs.
 if a gesture, `moveCamera` or `stopCamera()` stopped it. A later
 `animateCamera` takes over and completes the earlier one.
 
+## Drive the camera from your app
+
+To drive the camera yourself, for example to follow another map or a
+gesture layer of your own, create the map with `MapLibreMap.withCamera` and
+rebuild it with a new camera. The map applies each new camera while the widget builds, and its
+gestures don't move the camera while one is set.
+
+```dart
+MapLibreMap.withCamera(
+  camera: CameraPosition(
+    center: const Geographic(lon: 9.17, lat: 47.68),
+    zoom: zoom, // from your own state
+    bearing: 0,
+    pitch: 0,
+  ),
+)
+```
+
+On web the map draws the camera in the same browser frame as the widgets of
+that build. On every other platform the map image shows it a frame or two
+later, and `CameraPosition.of(context)` follows the image, so widgets in
+`MapLibreMap.children` stay on the map. Rebuild with the default constructor
+to hand the camera back to the gestures and `MapController`.
+
 ## Read the camera
 
 `MapController.getCamera()` returns the current camera, and the

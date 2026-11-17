@@ -579,6 +579,26 @@ Each entry: the decision, then why.
   which gl-js also times pattern and dash crossfades with, so off ends those
   too on web.
 
+- **An app drives the camera through the named constructor
+  `MapLibreMap.withCamera(camera: …)`, not an optional `camera` parameter of
+  the default constructor.** The user found a parameter too prominent for an
+  edge case (flutter_map as root, syncing maps, custom gesture layers). Each
+  new camera is applied in `didUpdateWidget`, so it reaches the map while the
+  widget builds: native submits it without waiting
+  (`discarding.updateCamera`), and `CameraPosition.of` still follows the frame
+  on screen. On web it jumps in build. Multi-threaded skwasm shows a Flutter
+  frame one browser frame after it was built, and GL JS draws a change made
+  within a frame in the next one, so both match. CanvasKit and
+  single-threaded skwasm show the build in the current browser frame, so GL
+  JS redraws in a post-frame callback, which runs in the same rAF. Not in
+  build, because `redraw()` fires `render`, `load` and `idle` synchronously,
+  and their callbacks may rebuild other widgets. Camera callbacks fired by
+  the jump are deferred to a microtask for the same reason. The gestures
+  don't move the camera while it is set (movements are none); the
+  controller still can, until the next change. Presenting frames in build
+  through one texture per ring slot would close the remaining one-frame race
+  on native, but changes how every map presents, so it is not done.
+
 ## Gestures
 
 - **Two options decide what gestures do: `MapOptions.movements`

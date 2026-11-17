@@ -1,6 +1,5 @@
-import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:maplibre/maplibre.dart';
@@ -322,6 +321,138 @@ void runTests() {
       final camera = map.controller.getCamera();
       expect(camera.zoom, closeTo(3, 1e-6));
       expect(camera.center.lon, closeTo(-20, 1e-6));
+    });
+  });
+
+  group('MapLibreMap.camera', () {
+    CameraPosition at(double lon, {double zoom = 5}) => CameraPosition(
+      center: Geographic(lon: lon, lat: 10),
+      zoom: zoom,
+      bearing: 20,
+      pitch: 0,
+    );
+
+    bool near(CameraPosition a, CameraPosition b) =>
+        (a.center.lon - b.center.lon).abs() < 1e-6 &&
+        (a.center.lat - b.center.lat).abs() < 1e-6 &&
+        (a.zoom - b.zoom).abs() < 1e-6 &&
+        (a.bearing - b.bearing).abs() < 1e-6;
+
+    testWidgets('the map starts at the camera', (tester) async {
+      final map = await pumpMap(tester, camera: at(30));
+      expect(near(map.controller.getCamera(), at(30)), isTrue);
+      expect(near(map.controller.camera!, at(30)), isTrue);
+    });
+
+    testWidgets('a new camera reaches the frame on screen', (tester) async {
+      final seen = <CameraPosition>[];
+      final map = await pumpMap(
+        tester,
+        camera: at(0),
+        children: [
+          Builder(
+            builder: (context) {
+              // On web, the children build before the map has a camera.
+              if (CameraPosition.maybeOf(context) case final camera?) {
+                seen.add(camera);
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
+      );
+      final since = map.events.length;
+      await map.setCamera(at(40, zoom: 6));
+      await map.waitForFrame((shown) => near(shown, at(40, zoom: 6)));
+      expect(near(map.controller.getCamera(), at(40, zoom: 6)), isTrue);
+      expect(near(seen.last, at(40, zoom: 6)), isTrue);
+      final moved = await map.waitForEvent<MapEventCameraMove>(since: since);
+      expect(moved.reason, CameraChangeReason.programmatic);
+    });
+
+    testWidgets('the map follows a camera that changes in every frame', (
+      tester,
+    ) async {
+      final map = await pumpMap(tester, camera: at(0));
+      for (var i = 1; i <= 30; i++) {
+        await map.setCamera(at(i.toDouble()));
+        await tester.pump(const Duration(milliseconds: 16));
+        // The map image never runs ahead of the camera the app set.
+        expect(map.controller.camera!.center.lon, lessThanOrEqualTo(i + 1e-6));
+      }
+      await map.waitForFrame((shown) => near(shown, at(30)));
+    });
+
+    testWidgets('gestures do not move the camera while it is set', (
+      tester,
+    ) async {
+      final map = await pumpMap(tester, camera: at(10));
+      final gesture = await tester.startGesture(map.toGlobal(map.center));
+      for (var i = 0; i < 10; i++) {
+        await gesture.moveBy(const Offset(20, 0));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(near(map.controller.getCamera(), at(10)), isTrue);
+    });
+
+    testWidgets('without the camera, the controller moves the map again', (
+      tester,
+    ) async {
+      final map = await pumpMap(tester, camera: at(10));
+      await map.setCamera(null);
+      await map.controller.moveCamera(
+        const CameraUpdate.position(center: Geographic(lon: -30, lat: 0)),
+      );
+      await map.waitForCamera((camera) => camera.center.lon < -29.99);
+      await map.setCamera(at(15));
+      await map.waitForFrame((shown) => near(shown, at(15)));
+    });
+
+    testWidgets('map callbacks may rebuild the app while the camera moves', (
+      tester,
+    ) async {
+      var lon = 0.0;
+      var idles = 0;
+      var frames = 0;
+      late StateSetter rebuild;
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              rebuild = setState;
+              return MapLibreMap.withCamera(
+                camera: at(lon),
+                options: offlineOptions(),
+                onIdle: (_) => rebuild(() => idles++),
+                onRenderFrame: (_) => rebuild(() => frames++),
+              );
+            },
+          ),
+        ),
+      );
+      final deadline = DateTime.now().add(defaultTimeout);
+      while (idles == 0) {
+        if (DateTime.now().isAfter(deadline)) fail('The map never got idle');
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      final idlesBefore = idles;
+      for (var i = 1; i <= 10; i++) {
+        rebuild(() => lon = i.toDouble());
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(tester.takeException(), isNull);
+      }
+      final idleDeadline = DateTime.now().add(defaultTimeout);
+      while (idles == idlesBefore) {
+        if (DateTime.now().isAfter(idleDeadline)) {
+          fail('The map never got idle after the moves');
+        }
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(tester.takeException(), isNull);
+      expect(frames, greaterThan(0));
     });
   });
 }

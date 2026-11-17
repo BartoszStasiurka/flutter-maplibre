@@ -141,8 +141,7 @@ class MapLibreMapStateNative extends MapLibreMapState {
       _eventMask = eventMask;
       map.discarding.setEventMask(eventMask);
     }
-    final options = this.options;
-    final initCamera = options.initCamera;
+    final initCamera = initialCamera;
     // Without an initial camera, MapLibre Native moves to the camera of the
     // style once it loads, but only while no camera change happened. Setting
     // camera constraints is one, so they follow the first style.
@@ -204,6 +203,19 @@ class MapLibreMapStateNative extends MapLibreMapState {
       unawaited(_setStyle(options.style));
     }
     super.didUpdateWidget(oldWidget);
+  }
+
+  /// Submits [camera] without waiting, so the map renders it next, in
+  /// order with every later command.
+  @override
+  void applyCamera(CameraPosition camera) {
+    final map = _map;
+    if (map == null) return;
+    _cancelAnimation();
+    _nextChangeReason = CameraChangeReason.programmatic;
+    map.discarding.updateCamera(
+      mln.CameraUpdate(camera: camera.toCameraUpdate().toMln()),
+    );
   }
 
   @override
@@ -734,16 +746,8 @@ class MapLibreMapStateNative extends MapLibreMapState {
     CameraUpdate update,
   ) async {
     switch (update) {
-      case CameraUpdatePosition(:final center, :final padding, :final anchor):
-        return mln.CameraOptions(
-          center: center?.toMln(),
-          zoom: update.zoom,
-          bearing: update.bearing,
-          pitch: update.pitch,
-          roll: update.roll,
-          padding: padding?.toMln(),
-          anchor: anchor?.toMln(),
-        );
+      case CameraUpdatePosition():
+        return update.toMln();
       case CameraUpdateFit():
         final fitOptions = mln.CameraFitOptions(
           padding: update.padding.toMln(),

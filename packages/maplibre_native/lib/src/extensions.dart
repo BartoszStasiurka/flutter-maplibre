@@ -132,6 +132,21 @@ extension EdgeInsetsExt on EdgeInsets {
       mln.EdgeInsets(top: top, left: left, bottom: bottom, right: right);
 }
 
+/// Extension methods for the [CameraUpdatePosition] class.
+extension CameraUpdatePositionExt on CameraUpdatePosition {
+  /// This update as the camera options of the C API. Values that are null
+  /// stay as they are.
+  mln.CameraOptions toMln() => mln.CameraOptions(
+    center: center?.toMln(),
+    zoom: zoom,
+    bearing: bearing,
+    pitch: pitch,
+    roll: roll,
+    padding: padding?.toMln(),
+    anchor: anchor?.toMln(),
+  );
+}
+
 /// Extension methods for the [CameraAnimation] class.
 extension CameraAnimationExt on CameraAnimation {
   /// This animation in the C API.

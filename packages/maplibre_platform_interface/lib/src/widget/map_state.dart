@@ -83,6 +83,10 @@ abstract class MapLibreMapState extends State<MapLibreMap>
     super.didUpdateWidget(oldWidget);
     _annotations.update(effectiveWidget.layers);
     if (oldWidget.paused != widget.paused) _updateRenderingPaused();
+    final targetCamera = widget.camera;
+    if (targetCamera != null && targetCamera != oldWidget.camera) {
+      applyCamera(targetCamera);
+    }
     // Plugins among the new children may have moved.
     if (!identical(oldWidget.children, widget.children) &&
         _plugins.entries.length > 1) {
@@ -111,6 +115,18 @@ abstract class MapLibreMapState extends State<MapLibreMap>
       }
     });
   }
+
+  /// Moves the camera to [camera] of [MapLibreMap.camera] while the widget
+  /// builds, after it changed. The platform takes the initial one as the
+  /// initial camera of the map instead.
+  @protected
+  void applyCamera(CameraPosition camera) {}
+
+  /// The camera that the map starts at: [MapLibreMap.camera], or else
+  /// [MapOptions.initCamera].
+  @protected
+  CameraUpdate? get initialCamera =>
+      widget.camera?.toCameraUpdate() ?? options.initCamera;
 
   /// Applies the camera changes of the map gestures that
   /// [MapGestureDetector] recognizes over [buildPlatformWidget], or null if
@@ -743,9 +759,10 @@ abstract class MapLibreMapState extends State<MapLibreMap>
     ];
   }
 
-  /// The movements that [MapOptions.movements] and every plugin allow.
+  /// The movements that [MapOptions.movements] and every plugin allow. None
+  /// while [MapLibreMap.camera] drives the camera.
   MapMovements get _movements => _pluginOrder.fold(
-    options.movements,
+    widget.camera == null ? options.movements : const MapMovements.none(),
     (movements, entry) => movements.restrictedBy(entry.plugin.movements),
   );
 

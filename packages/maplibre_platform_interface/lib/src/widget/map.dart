@@ -49,10 +49,80 @@ class MapLibreMap extends StatefulWidget {
     this.children = const [],
     this.paused = false,
     super.key,
+  }) : camera = null;
+
+  /// Creates a map whose camera the app drives through [camera], for
+  /// example to follow another map or a gesture layer of its own. Rebuild
+  /// it with a new [camera] to move the map. The map gestures don't move
+  /// the camera.
+  const MapLibreMap.withCamera({
+    required CameraPosition this.camera,
+    this.options = const MapOptions(),
+    this.gestureRecognizers,
+    this.onMapCreated,
+    this.onStyleLoaded,
+    this.onClick,
+    this.onDoubleClick,
+    this.onSecondaryClick,
+    this.onLongClick,
+    this.onDragStart,
+    this.onDrag,
+    this.onDragEnd,
+    this.onPointerMove,
+    this.onPointerLeave,
+    this.onCameraMoveStart,
+    this.onCameraMove,
+    this.onCameraMoveEnd,
+    this.onIdle,
+    this.onError,
+    this.onStyleImageMissing,
+    this.onLoadingStarted,
+    this.onLoadingFinished,
+    this.onSourceChanged,
+    this.onTile,
+    this.onRenderFrame,
+    this.onRenderMap,
+    this.onGlyphs,
+    this.onSprite,
+    this.onRenderingChanged,
+    this.onResize,
+    this.onContextLost,
+    this.onContextRestored,
+    this.onProjectionChanged,
+    this.layers = const [],
+    this.children = const [],
+    this.paused = false,
+    super.key,
   });
 
   /// Use the [options] field to customize the map and set default values.
   final MapOptions options;
+
+  /// The camera that the map shows, set by [MapLibreMap.withCamera] for an
+  /// app that drives the camera itself, such as another map whose camera
+  /// this one follows, or a custom gesture layer. Null for every other map.
+  ///
+  /// It is the camera the app asks for. [MapController.camera] and
+  /// [CameraPosition.of] are the camera of the frame on screen, which
+  /// reaches it a frame or two later on every platform but web.
+  ///
+  /// While it is set, the map shows this camera from its first frame on and
+  /// the map gestures don't move the camera, as if [MapOptions.movements]
+  /// were [MapMovements.none]. Each new camera is applied while the widget
+  /// builds, so the map reaches it as soon as the platform allows:
+  ///
+  /// - On web, the map draws it in the same browser frame as the widgets
+  ///   that this build positions.
+  /// - On every other platform, the map renders it right away and shows it
+  ///   a frame or two later. [CameraPosition.of] in [children] follows the
+  ///   frame on screen, so widgets that position themselves with it stay on
+  ///   the map image.
+  ///
+  /// [MapController.moveCamera] and [MapController.animateCamera] still move
+  /// the camera until the next build with a different [camera]. Rebuild
+  /// with the default constructor to hand the camera back to the gestures
+  /// and the controller.
+  final CameraPosition? camera;
 
   /// Flutter widgets that get displayed on top on the map and are within the
   /// [MapLibreMap] context.

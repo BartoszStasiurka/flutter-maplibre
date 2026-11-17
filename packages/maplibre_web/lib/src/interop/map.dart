@@ -53,6 +53,9 @@ extension type JsMap._(Camera _) implements Camera {
   /// Manually trigger a resize of the map to fit the size of the screen.
   external void resize();
 
+  /// Renders the map right away, instead of in the next animation frame.
+  external void redraw();
+
   /// Clean up and release all internal JS resources associated with this map.
   external void remove();
 
