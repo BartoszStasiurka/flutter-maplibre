@@ -1,3 +1,17 @@
+## Unreleased
+
+### Bug Fixes
+
+- A change made through the `StyleController` of a style that a new style
+  replaced no longer reaches the new one. From the moment the new style is
+  set, the `layers` and `sources` of the old controller take no change, the
+  setters of its `StyleLayer` objects no longer reach the map, and
+  `addImage`, `removeImage`, `setProjection` and `setPlacementTransitions` do
+  nothing. The collections still read the style on screen until the new one
+  loads, and `attributions` still reports it. Debug builds warn once.
+
+Full Changelog: [v0.4.0-pre.3...main](https://github.com/maplibre/flutter-maplibre/compare/v0.4.0-pre.3...main)
+
 ## 0.4.0-pre.3
 
 `maplibre` is now a MapLibre

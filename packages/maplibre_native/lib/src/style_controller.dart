@@ -20,6 +20,7 @@ class StyleControllerNative extends StyleController implements StyleBackend {
   /// switches did.
   @override
   Future<void> setPlacementTransitions({required bool enabled}) async {
+    if (_replaced) return;
     final options = await _map.getStyleTransitionOptions();
     // A style set meanwhile has its own options, with them on.
     if (_replaced) return;
@@ -38,18 +39,24 @@ class StyleControllerNative extends StyleController implements StyleBackend {
   var _disposed = false;
 
   /// A newer style was set on the map, so the map's style commands no
-  /// longer reach this one.
+  /// longer reach this one. A controller that was replaced while it loaded
+  /// never becomes the style of the map.
+  bool get replaced => _replaced;
   bool get _replaced => _disposed || _replacedByNewer;
   var _replacedByNewer = false;
 
   /// Called when a newer style is set on the map, before its load is queued.
-  void markReplaced() => _replacedByNewer = true;
+  void markReplaced() {
+    _replacedByNewer = true;
+    layers.markReplaced();
+    sources.markReplaced();
+  }
 
   /// Fills [layers] and [sources] from the style that the map loaded, and
   /// reads its attributions.
   Future<void> load() async {
     final style = await _map.getLoadedStyleJson();
-    if (_disposed) return;
+    if (_replaced) return;
     if (style case {'sources': final Map<String, Object?> styleSources}) {
       sources.load(styleSources);
     }
@@ -107,17 +114,23 @@ class StyleControllerNative extends StyleController implements StyleBackend {
       _emptyImage,
     );
     // Whether the source is still on the map: it may have been removed or
-    // replaced meanwhile. Moving its corners keeps the image.
-    bool current() => switch ((source, sources[source.id])) {
-      (ImageSourceBytes(:final bytes), ImageSourceBytes(bytes: final now)) =>
-        identical(bytes, now),
-      (
-        ImageSourceProvider(:final image),
-        ImageSourceProvider(image: final now),
-      ) =>
-        identical(image, now),
-      _ => false,
-    };
+    // replaced meanwhile, and a new style on the map takes the image of
+    // this one nowhere. Moving its corners keeps the image.
+    bool current() =>
+        !_replaced &&
+        switch ((source, sources[source.id])) {
+          (
+            ImageSourceBytes(:final bytes),
+            ImageSourceBytes(bytes: final now),
+          ) =>
+            identical(bytes, now),
+          (
+            ImageSourceProvider(:final image),
+            ImageSourceProvider(image: final now),
+          ) =>
+            identical(image, now),
+          _ => false,
+        };
     await added;
     final mln.PremultipliedRgba8Image pixels;
     try {
@@ -272,6 +285,7 @@ class StyleControllerNative extends StyleController implements StyleBackend {
     double pixelRatio = 1,
     StyleImageOptions options = const StyleImageOptions(),
   }) async {
+    if (_replaced) return;
     final image = await _decodeImage(bytes);
     try {
       await addImageFromUiImage(
@@ -320,15 +334,18 @@ class StyleControllerNative extends StyleController implements StyleBackend {
     double pixelRatio = 1,
     StyleImageOptions options = const StyleImageOptions(),
   }) async {
-    await _map.setStyleImage(
-      id,
-      await _premultipliedImage(image, id),
-      options: options.toMln(pixelRatio),
-    );
+    if (_replaced) return;
+    final pixels = await _premultipliedImage(image, id);
+    // A new style can be set on the map while the pixels are read.
+    if (_replaced) return;
+    await _map.setStyleImage(id, pixels, options: options.toMln(pixelRatio));
   }
 
   @override
   Future<void> removeImage(String id) async {
+    // The image of a style that went away: the id may be taken on the style
+    // that replaced it.
+    if (_replaced) return;
     await _checkUnlessMissing(_map.removeStyleImage(id));
   }
 
@@ -346,9 +363,9 @@ class StyleControllerNative extends StyleController implements StyleBackend {
   /// Reads what the sources of the map learned from their TileJSON into
   /// [sources], and refreshes the cached attributions.
   Future<List<String>> refreshAttributions() async {
-    if (_disposed) return _cachedAttributions;
+    if (_replaced) return _cachedAttributions;
     final infos = await _map.listStyleSources();
-    if (_disposed) return _cachedAttributions;
+    if (_replaced) return _cachedAttributions;
     for (final info in infos) {
       if (info.tileJson case final tileJson?) {
         final bounds = info.bounds;
@@ -400,6 +417,9 @@ class StyleControllerNative extends StyleController implements StyleBackend {
   @override
   void dispose() {
     _disposed = true;
+    _cachedAttributions = const [];
+    // The collections take no further change, and forget the style.
+    markReplaced();
     layers.dispose();
     sources.dispose();
     super.dispose();
