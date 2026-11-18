@@ -102,7 +102,7 @@ class StyleControllerWeb extends StyleController implements StyleBackend {
       interop.ImageSpecification(
         width: image.width,
         height: image.height,
-        data: data.buffer.asUint8List().toJS,
+        data: Uint8List.sublistView(data).toJS,
       ),
       options.toJs(pixelRatio),
     );
@@ -382,7 +382,7 @@ class StyleControllerWeb extends StyleController implements StyleBackend {
       final context =
           canvas.getContext('2d')! as OffscreenCanvasRenderingContext2D;
       context.putImageData(
-        ImageData(data.buffer.asUint8ClampedList().toJS, image.width),
+        ImageData(Uint8ClampedList.sublistView(data).toJS, image.width),
         0,
         0,
       );

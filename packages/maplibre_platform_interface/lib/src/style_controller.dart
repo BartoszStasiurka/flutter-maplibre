@@ -140,7 +140,7 @@ abstract class StyleController implements Listenable {
     StyleImageOptions options = const StyleImageOptions(),
   }) async {
     final byteData = await rootBundle.load(asset);
-    final bytes = byteData.buffer.asUint8List();
+    final bytes = Uint8List.sublistView(byteData);
     await addImage(id, bytes, pixelRatio: pixelRatio, options: options);
   }
 

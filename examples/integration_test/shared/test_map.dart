@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/rendering.dart' show OffsetLayer;
 import 'package:flutter_test/flutter_test.dart';
@@ -236,7 +237,7 @@ class TestMap {
       image.dispose();
       return data!;
     });
-    return bytes!.buffer.asUint8List().toList();
+    return Uint8List.sublistView(bytes!).toList();
   }
 
   /// Waits until the center of the map shows the color [name], whose RGB

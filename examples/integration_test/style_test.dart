@@ -308,7 +308,7 @@ void runTests() {
 
     testWidgets('uses image sources right after adding them', (tester) async {
       final map = await pumpMap(tester);
-      final bytes = (await rootBundle.load(_markerAsset)).buffer.asUint8List();
+      final bytes = Uint8List.sublistView(await rootBundle.load(_markerAsset));
       final sources = [
         ImageSource.bytes(id: 'bytes', bytes: bytes, coordinates: _quad),
         const ImageSource.provider(
@@ -588,7 +588,7 @@ void runTests() {
       await map.style.sources.add(
         GeoJsonSource.data(id: 'src', data: _pointData()),
       );
-      final bytes = (await rootBundle.load(_markerAsset)).buffer.asUint8List();
+      final bytes = Uint8List.sublistView(await rootBundle.load(_markerAsset));
       await map.style.addImage('marker', bytes);
       final a = _icon('a', 'src');
       await map.style.layers.add(a);
@@ -645,7 +645,7 @@ void runTests() {
       await map.style.sources.add(
         GeoJsonSource.data(id: 'src', data: _pointData()),
       );
-      final bytes = (await rootBundle.load(_markerAsset)).buffer.asUint8List();
+      final bytes = Uint8List.sublistView(await rootBundle.load(_markerAsset));
       await map.style.addImage(
         'stretchable',
         bytes,
@@ -749,7 +749,7 @@ void runTests() {
         topLeft: Geographic(lon: -1, lat: 1),
         topRight: Geographic(lon: 1, lat: 1),
       );
-      final bytes = (await rootBundle.load(_markerAsset)).buffer.asUint8List();
+      final bytes = Uint8List.sublistView(await rootBundle.load(_markerAsset));
       await map.style.sources.add(
         ImageSource.bytes(id: 'image', bytes: bytes, coordinates: quad),
       );
@@ -789,7 +789,7 @@ void runTests() {
       await map.style.sources.add(
         GeoJsonSource.data(id: 'geo', data: _pointData()),
       );
-      final bytes = (await rootBundle.load(_markerAsset)).buffer.asUint8List();
+      final bytes = Uint8List.sublistView(await rootBundle.load(_markerAsset));
       await map.style.addImage('marker', bytes);
       await map.style.layers.add(
         FillStyleLayer(id: 'low', sourceId: 'tiles', sourceLayerId: 'x'),
@@ -1137,7 +1137,7 @@ void runTests() {
       // maplibre-gl-js fades labels only after the map's first idle.
       await map.waitForEvent<MapEventIdle>();
       if (kIsWeb) addTearDown(startFramePixels());
-      final bytes = (await rootBundle.load(_markerAsset)).buffer.asUint8List();
+      final bytes = Uint8List.sublistView(await rootBundle.load(_markerAsset));
 
       // The center's colors in the frames until it shows the color that
       // [done] accepts: every frame on web, as often as Flutter can read

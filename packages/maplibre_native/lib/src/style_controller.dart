@@ -309,7 +309,7 @@ class StyleControllerNative extends StyleController implements StyleBackend {
       width: image.width,
       height: image.height,
       stride: image.width * 4,
-      pixels: data.buffer.asUint8List(),
+      pixels: Uint8List.sublistView(data),
     );
   }
 

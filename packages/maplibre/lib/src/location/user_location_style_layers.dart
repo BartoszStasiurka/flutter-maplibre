@@ -156,7 +156,7 @@ Future<Uint8List> drawHeadingImage(Color color) async {
   picture.dispose();
   try {
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    return bytes!.buffer.asUint8List();
+    return Uint8List.sublistView(bytes!);
   } finally {
     image.dispose();
   }
