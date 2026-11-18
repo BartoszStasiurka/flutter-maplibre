@@ -1,0 +1,37 @@
+name: Publish a plugin to pub.dev
+
+# Publishes one plugin package, such as maplibre_geolocator, when its tag
+# `{package}-v{version}` is pushed, e.g. `maplibre_geolocator-v0.1.1`. The
+# core packages keep their `v{version}` tags in publish.yml. pub.dev only
+# trusts tag pushes that match the tag pattern in the package's admin settings
+# (`maplibre_geolocator-v{{version}}`).
+on:
+  push: { tags: [ 'maplibre_*-v[0-9]+.[0-9]+.[0-9]+*' ] }
+
+jobs:
+  check:
+    name: "Check the release"
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    outputs:
+      directory: ${{ steps.check.outputs.directory }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: "Setup Flutter SDK"
+        uses: subosito/flutter-action@v2
+        with: { cache: true }
+      - name: Install dependencies
+        run: dart pub get
+      - name: Run release checks
+        id: check
+        env: { TAG: "${{ github.ref_name }}" }
+        run: |
+          dart run tool/check-release.dart \
+            --package "${TAG%%-v*}" --version "${TAG#*-v}"
+  publish:
+    name: "Publish the plugin"
+    needs: check
+    permissions: { id-token: write }
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with: { working-directory: "${{ needs.check.outputs.directory }}" }

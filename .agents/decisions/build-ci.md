@@ -22,3 +22,10 @@
 - **CI has no build-only jobs for platforms the integration tests run on.**
   Each integration test job builds the example app for its platform. Only
   the web wasm build has its own job, as the tests run the JavaScript build.
+- **Plugin packages, such as `maplibre_geolocator`, are published from
+  their own tag `{package}-v{version}` by `publish-plugin.yml`.** They have
+  versions of their own and depend on a released `maplibre`, so they can't
+  ship with the `v{version}` tag of the core packages in `publish.yml`. A
+  plugin is listed in `_pluginPackages` of `tool/check-release.dart`, and
+  its pub.dev admin settings take the tag pattern
+  `{package}-v{{version}}`.

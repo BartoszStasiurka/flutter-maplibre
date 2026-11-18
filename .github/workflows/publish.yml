@@ -2,7 +2,8 @@ name: Publish to pub.dev
 
 # Runs when a GitHub release (drafted by draft-release.yml) is published with
 # its new tag. pub.dev only trusts tag pushes that match the tag pattern set in
-# each package's admin settings (`v{{version}}`).
+# each package's admin settings (`v{{version}}`). Plugin packages have tags of
+# their own, see publish-plugin.yml.
 on:
   push: { tags: [ 'v[0-9]+.[0-9]+.[0-9]+*' ] }
 
