@@ -8,20 +8,17 @@ description: 'Add maplibre to a Flutter app and check the supported platforms an
 
 ## Add the dependency
 
-!!! info "Pre-release"
+!!! info "Upgrading from 0.3.x"
 
-    Version 0.4.0 is available as a pre-release,
-    `0.4.0-pre.3`, while it is being tested. Please
-    [report bugs](https://github.com/maplibre/flutter-maplibre/issues/new?labels=bug&template=1-bug.yml)
-    you find. If you upgrade from 0.3.x, read the
-    [migration guide](../migrate/upgrade-from-v0.3.x.md).
+    Version 0.4 changes much of the API. Read the
+    [migration guide](../migrate/upgrade-from-v0.3.x.md) when you upgrade.
 
 === "Run command"
 
     Add `maplibre` to your project by running this command:
 
     ```bash
-    flutter pub add maplibre:^0.4.0-pre.3
+    flutter pub add maplibre:^0.4.0
     ```
 
 === "Edit `pubspec.yaml`"
@@ -30,7 +27,7 @@ description: 'Add maplibre to a Flutter app and check the supported platforms an
 
     ```yaml title="pubspec.yaml" hl_lines="2"
     dependencies:
-      maplibre: ^0.4.0-pre.3
+      maplibre: ^0.4.0
     ```
 
     and then run `flutter pub get` to install the package.
@@ -38,9 +35,6 @@ description: 'Add maplibre to a Flutter app and check the supported platforms an
     ```bash
     flutter pub get
     ```
-
-The version constraint `^0.4.0-pre.3` also accepts the later 0.4 pre-releases
-and 0.4.0 itself once it is out.
 
 The packages need Dart 3.13 and Flutter 3.47 or newer. Some platforms need
 setup steps, see [Platform setup](platforms.md).
