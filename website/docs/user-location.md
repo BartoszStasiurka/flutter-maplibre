@@ -1,6 +1,7 @@
 ---
 title: 'User Location'
 icon: lucide/navigation
+description: 'Show the location of the user on the map and let the camera follow it.'
 ---
 
 # User Location

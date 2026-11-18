@@ -1,6 +1,7 @@
 ---
 title: 'Upgrade to 0.4'
 icon: lucide/arrow-up-right
+description: 'Every breaking change of 0.4 and how to update code written for 0.3.'
 ---
 
 # Upgrade from 0.3.x to 0.4
@@ -11,6 +12,12 @@ desktop integration with one implementation on the
 also makes style layers, expressions, sources and map options typed. This
 guide applies to the `0.4.0-pre.*` pre-releases and to 0.4.0. The
 [changelog](https://pub.dev/packages/maplibre/changelog) lists every change.
+
+!!! tip "Migrate with an AI assistant"
+
+    The [`maplibre-migrate` skill](https://github.com/maplibre/flutter-maplibre/tree/main/skills/maplibre-migrate)
+    walks AI coding assistants through this guide. See
+    [AI tools](../getting-started/ai-tools.md#migration-skill) to install it.
 
 ## 1. Update the dependency
 

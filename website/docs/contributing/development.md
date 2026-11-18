@@ -1,6 +1,7 @@
 ---
 title: 'Local development'
 icon: lucide/wrench
+description: 'Set up the repository, run the example app and the tests, and check a change.'
 ---
 
 # Local development

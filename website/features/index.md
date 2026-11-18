@@ -1,6 +1,7 @@
 ---
 title: Features
 hide: [ navigation ]
+description: 'Which features each platform supports.'
 ---
 
 # Supported Features

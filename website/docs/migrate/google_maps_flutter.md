@@ -13,6 +13,12 @@ and also runs on macOS, Windows and Linux. The widget and its markers, polylines
 polygons and circles map closely to `maplibre`, so most of a migration is
 renaming.
 
+!!! tip "Migrate with an AI assistant"
+
+    The [`maplibre-migrate` skill](https://github.com/maplibre/flutter-maplibre/tree/main/skills/maplibre-migrate)
+    walks AI coding assistants through this guide. See
+    [AI tools](../getting-started/ai-tools.md#migration-skill) to install it.
+
 ## 1. Choose map data
 
 Google's map data is only available through Google's SDKs. Pick a tile

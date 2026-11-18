@@ -14,6 +14,12 @@ options and annotations as widget parameters and has typed style layers,
 while `mapbox_maps_flutter` configures the map through its `MapboxMap`
 object and annotation managers.
 
+!!! tip "Migrate with an AI assistant"
+
+    The [`maplibre-migrate` skill](https://github.com/maplibre/flutter-maplibre/tree/main/skills/maplibre-migrate)
+    walks AI coding assistants through this guide. See
+    [AI tools](../getting-started/ai-tools.md#migration-skill) to install it.
+
 ## 1. Choose map data
 
 Mapbox styles (`mapbox://styles/…`) and the Mapbox Standard style need Mapbox

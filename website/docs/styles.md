@@ -1,5 +1,6 @@
 ---
 icon: lucide/map
+description: 'Load a map style from a URL, an asset, a file or JSON, and find style providers.'
 ---
 
 # Styles

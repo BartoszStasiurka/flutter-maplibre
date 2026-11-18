@@ -27,8 +27,9 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: 3.x
-      - run: pip install zensical
+      - run: pip install zensical pyyaml
       - run: zensical build --clean
+      - run: python .github/scripts/llms_txt.py
       - uses: actions/configure-pages@v5
         if: env.DEPLOY == 'true'
         id: pages

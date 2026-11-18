@@ -15,7 +15,7 @@ for all available properties for the different layers.
 
 Every property is an optional parameter and a getter and setter of its layer
 class, without the prefix of the layer type, so `line-width` is
-`LineStyleLayer.width`. It takes an [Expression](expressions) for zoom level
+`LineStyleLayer.width`. It takes an [Expression](expressions.md) for zoom level
 dependent and data driven styling. A property with a transition also has one,
 such as `colorTransition`:
 

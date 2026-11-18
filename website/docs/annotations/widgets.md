@@ -1,6 +1,6 @@
 ---
 title: 'Widget'
-description: 'Add Flutter Widget to the map.'
+description: 'Show Flutter widgets on the map at geographic positions.'
 icon: lucide/layout-grid
 ---
 

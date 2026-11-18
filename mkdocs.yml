@@ -15,6 +15,7 @@ nav:
           - Installation: docs/getting-started/setup.md
           - Platform setup: docs/getting-started/platforms.md
           - First map: docs/getting-started/usage.md
+          - AI tools: docs/getting-started/ai-tools.md
       - Guides:
           - Map & Camera: docs/map.md
           - Styles: docs/styles.md
@@ -52,6 +53,7 @@ nav:
       - Contributing:
           - Architecture: docs/contributing/architecture.md
           - Local development: docs/contributing/development.md
+          - API guidelines: docs/contributing/api-guidelines.md
   - Features: features/index.md
   - Compare: compare/index.md
   - API: https://pub.dev/documentation/maplibre/latest/maplibre/

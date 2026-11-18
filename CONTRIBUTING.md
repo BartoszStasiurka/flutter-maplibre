@@ -32,8 +32,10 @@ The repository is a [pub workspace](https://dart.dev/tools/pub/workspaces):
 | `website`                              | Documentation website                                       |
 
 [Architecture](https://maplibre.org/flutter-maplibre/docs/contributing/architecture/)
-explains how the packages fit together, and [AGENTS.md](AGENTS.md) lists the
-code generation commands and the rules of the code base.
+explains how the packages fit together, the
+[API guidelines](https://maplibre.org/flutter-maplibre/docs/contributing/api-guidelines/)
+the rules of the public API, and [AGENTS.md](AGENTS.md) lists the code
+generation commands and the other rules of the code base.
 
 ## Development
 

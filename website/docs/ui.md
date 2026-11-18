@@ -1,5 +1,6 @@
 ---
 icon: lucide/gamepad-directional
+description: 'The compass, scale bar, attribution and zoom buttons, and how to place them on the map.'
 ---
 
 # User Interface

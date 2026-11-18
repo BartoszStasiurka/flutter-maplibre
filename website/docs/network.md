@@ -1,5 +1,6 @@
 ---
 icon: lucide/globe
+description: 'Request headers and URL transforms for the styles, tiles and other resources that maps load.'
 ---
 
 # Network

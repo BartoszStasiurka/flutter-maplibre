@@ -2,75 +2,83 @@
 
 Flutter MapLibre: a federated plugin in a Dart pub workspace.
 
+Start here. This file says where the code is, how to check a change and
+where each rule is written down. Every rule and decision lives in exactly
+one place: read it there, change it there, and link to it instead of
+repeating it.
+
+## Where the rules are
+
+Read the file for the area you change before you change it.
+
+| Area                                                                | File                                                                                                   |
+|---------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| Public API, dartdoc, docs wording, platform type conversions        | `website/docs/contributing/api-guidelines.md`                                                          |
+| Packages, rendering through `Texture` only, plugin calls through ffigen and jnigen only, engines, threading, GPU | `.agents/decisions/architecture.md`                                           |
+| The Windows, Linux, Android, or iOS and macOS plugin                | `.agents/decisions/windows.md`, `linux.md`, `android.md`, `apple.md`                                    |
+| `MapLibreMap`, options, events, plugins, camera, queries, network   | `.agents/decisions/map-api.md`                                                                         |
+| Sources, style layers, expressions, style images                    | `.agents/decisions/style-api.md`                                                                       |
+| Annotation layers and their manager                                 | `.agents/decisions/annotations.md`                                                                     |
+| Offline regions and the database                                    | `.agents/decisions/offline.md`                                                                         |
+| User location                                                       | `.agents/decisions/user-location.md`                                                                   |
+| Gestures (recognized once, in `MapGestureDetector`)                 | `.agents/decisions/gestures.md`                                                                        |
+| Unit and integration tests                                          | `.agents/decisions/tests.md`                                                                           |
+| Build, code generation, CI, the docs site                           | `.agents/decisions/build-ci.md`                                                                        |
+| What `maplibre_native_ffi` lacks, and the workarounds               | `.agents/decisions/ffi-gaps.md`                                                                        |
+
+`website/docs/contributing/architecture.md` explains how the packages fit
+together, with diagrams.
+
 ## Layout
 
 - `packages/maplibre`: the app-facing package.
-- `packages/maplibre_platform_interface`: shared API that the platform packages
-  implement, and the shared gesture recognizer (`lib/src/gestures/`).
-  - `lib/src/layer/`: the annotation layers of `MapLibreMap.layers`, and
-    `annotation_manager.dart`, which keeps them on every style of a map,
-    with its parts `annotation_images.dart` and `annotation_drag.dart`, and
-    the pure `annotation_placement.dart`, which orders their style layers.
-  - `lib/src/style/style_owner.dart`: `StyleOwner`, through which the
-    manager protects its style layers and sources in the style collections.
-  - `lib/src/style/expressions/`: typed style expressions.
-  - `lib/src/style/layers/`: `StyleLayer`, the `StyleLayers` collection, and
-    `style_layers.g.dart`, generated from the style spec.
-  - `lib/src/style/sources/`: sources and the `StyleSources` collection.
-  - `lib/src/style/style_backend.dart`: what those collections need from a
-    platform.
-  - `lib/src/widget/`: `MapLibreMap` and its state; `map_plugin.dart` and
-    `map_plugin_registry.dart`, through which widgets in
-    `MapLibreMap.children` add layers, callbacks and movement limits; and
-    `inherited_model.dart` behind `MapController.of`, `CameraPosition.of`
-    and `MapOptions.of`.
-  - `lib/src/network.dart`: `MapLibreNetwork`, the static request headers
-    and URL transform of every map and the offline manager.
-- `packages/maplibre_web`: browser, via maplibre-gl-js.
-- `packages/maplibre_geolocator`: optional adapter from `geolocator` positions
-  to the `UserLocationLayer` of `maplibre`.
-- `packages/maplibre_native`: every other platform, on the MapLibre Native C API.
-  - The C API and its Dart binding come from `maplibre_native_ffi` on pub.dev,
-    whose build hook downloads the prebuilt C library of its release.
-  - `lib/src/frame_target.dart`: how frames reach Flutter. `MapRenderer`
-    drives the session the same way everywhere; each platform's
-    `FrameTarget` (`lib/src/<platform>/*_target.dart`) owns its texture and
-    plugin calls.
-  - `lib/src/database.dart`: the database that every map and the
-    `OfflineManager` (`lib/src/offline_manager.dart`) share.
-  - `desktop/`: C++ shared by the Windows and Linux plugins: the C API
-    `desktop/include/maplibre_native/maplibre_native_api.h`, bound in
-    `lib/src/desktop/bindings.g.dart`. Maps render on a Vulkan device that
-    the C library creates on Flutter's GPU.
-  - `windows/`: C++ plugin (copies frames of the library's DXGI shared
-    texture ring into the textures Flutter shows).
-  - `linux/`: C++ GTK plugin (a ring of Vulkan images on the library's
-    device, and an `FlTextureGL` whose `populate` imports them into
-    Flutter's OpenGL context and samples them directly, with fences for the
-    slots Flutter left).
-  - `android/`: Kotlin plugin, no native code (SurfaceProducer Surfaces, which
-    the C library presents to with a graphics context of its own). Its API is
-    `MaplibreNativeApi.kt`, bound in `lib/src/android/bindings.g.dart`.
-  - `darwin/`: Objective-C plugin for iOS and macOS, a SwiftPM package only
-    (wraps the library's IOSurface ring in pixel buffers that Flutter
-    samples). Its C
-    API is `darwin/maplibre_native/Sources/maplibre_native/include/maplibre_native/maplibre_native_api.h`,
-    bound in `lib/src/darwin/bindings.g.dart`.
-- `examples/`: the reference app, which also runs the integration tests on
-  every platform. `integration_test/all_test.dart` runs them all in one
-  launch; `integration_test/shared/test_map.dart` pumps a map and waits for
-  its events, frames and features.
-- `.github/workflows/docs.yml`: builds the website (`website/`, `mkdocs.yml`)
-  on every pull request; on main it also builds the example app for web as
-  the demo and deploys both to GitHub Pages. Links from the website to the
-  demo are relative (`demo/`, `../../demo/`), because the site lives under a
-  subpath there.
-- `.github/scripts/watchdog.sh`: stops a CI test run once its output stalls
-  and reports the last test, the app's stacks and its log as annotations;
-  exits with 75 when flutter test never attached to the app, so CI retries.
-- `tool/codegen/`: ffigen, jnigen and style layer scripts. A separate package outside the
-  workspace, because the generators need newer native-asset packages than the
-  binding allows.
+- `packages/maplibre_platform_interface`: the shared API that the platform
+  packages implement, and the shared gesture recognizer
+  (`lib/src/gestures/`).
+  - `lib/src/layer/`: the annotation layers of `MapLibreMap.layers`;
+    `annotation_manager.dart` with its parts `annotation_images.dart` and
+    `annotation_drag.dart`, and the pure `annotation_placement.dart`.
+  - `lib/src/style/`: `style_owner.dart`, `expressions/`, `layers/` (with
+    `style_layers.g.dart`, generated from the style spec), `sources/`, and
+    `style_backend.dart`, what the style collections need from a platform.
+  - `lib/src/widget/`: `MapLibreMap` and its state, `map_plugin.dart`,
+    `map_plugin_registry.dart`, and `inherited_model.dart` behind
+    `MapController.of`, `CameraPosition.of` and `MapOptions.of`.
+  - `lib/src/network.dart`: `MapLibreNetwork`.
+- `packages/maplibre_web`: web, on maplibre-gl-js.
+- `packages/maplibre_geolocator`: adapter from `geolocator` positions to
+  `UserLocationLayer`.
+- `packages/maplibre_native`: every other platform, on the C API of
+  `maplibre_native_ffi` from pub.dev.
+  - `lib/src/frame_target.dart`: `MapRenderer` and the `FrameTarget` of
+    each platform (`lib/src/<platform>/*_target.dart`).
+  - `lib/src/database.dart` and `lib/src/offline_manager.dart`.
+  - `desktop/`: C++ shared by the Windows and Linux plugins; its C API
+    `desktop/include/maplibre_native/maplibre_native_api.h` is bound in
+    `lib/src/desktop/bindings.g.dart`.
+  - `windows/`, `linux/`: the C++ plugins.
+  - `android/`: the Kotlin plugin; `MaplibreNativeApi.kt` is bound in
+    `lib/src/android/bindings.g.dart`.
+  - `darwin/`: the Objective-C plugin for iOS and macOS, a SwiftPM package;
+    its C API
+    `darwin/maplibre_native/Sources/maplibre_native/include/maplibre_native/maplibre_native_api.h`
+    is bound in `lib/src/darwin/bindings.g.dart`.
+- `examples/`: the example app, which runs the integration tests on every
+  platform. `integration_test/all_test.dart` runs them in one launch;
+  `integration_test/shared/test_map.dart` has the `TestMap` helpers.
+- `website/`, `mkdocs.yml`: the docs site, built by
+  `.github/workflows/docs.yml`, which also deploys it with the web demo
+  from main. Links from the site to the demo are relative (`demo/`,
+  `../../demo/`), because the site lives under a subpath.
+- `.github/scripts/llms_txt.py`: run after `zensical build`; writes
+  `llms.txt`, `llms-full.txt`, a Markdown copy of every page and the skills
+  of `skills/` into `site/`.
+- `.github/scripts/watchdog.sh`: stops a stalled CI test run (see
+  `tests.md`).
+- `skills/`: agent skills for app developers (`maplibre-migrate`). They
+  link to the docs pages instead of copying them.
+- `tool/codegen/`: the ffigen, jnigen and style layer generators, a package
+  outside the workspace (see `build-ci.md`).
 
 ## Commands
 
@@ -85,42 +93,21 @@ cd examples && flutter drive --driver test_driver/integration_test.dart --target
 cd tool/codegen && dart run ffigen.dart       # after changing the desktop or Darwin C API header
 cd tool/codegen && dart run jnigen.dart       # after changing MaplibreNativeApi.kt; build examples for Android in release first
 cd tool/codegen && dart run style_layers.dart # after raising the style spec version in the script
+pip install zensical pyyaml && zensical build --clean && python3 .github/scripts/llms_txt.py  # docs site
 packages/maplibre_native/linux/test/run_gl_texture_test.sh  # Linux zero-copy check, no Flutter build needed
 ```
 
-Building the C library locally is covered in `CONTRIBUTING.md`: name the
-build root of a maplibre-native-ffi clone in
-`hooks.user_defines.maplibre_native_ffi.local_build` of the root
-`pubspec.yaml`.
+Building the C library locally is covered in `CONTRIBUTING.md`.
 
-## Rules
+## Working rules
 
-- Maps render only through Flutter's texture registry and the `Texture`
-  widget, never through platform views.
-- Gestures are recognized once, in `MapGestureDetector`. Platforms only
-  implement `GestureCameraSink`, applying screen-space steps with their own
-  camera engine.
-- Test what needs no platform with unit tests in the packages, against
-  mocked controllers. Integration tests in `examples/integration_test` cover
-  what each platform implements. Prefer local styles and GeoJSON over the network, wait
-  with the `TestMap` helpers instead of fixed delays, and assert what the
-  map shows (camera, frame, features), not only that a call returns.
-- Never use method channels. Dart calls native code through ffigen (C/C++)
-  or jnigen (Kotlin/Java) bindings.
-- Note API gaps of `maplibre_native_ffi` in `.agents/decisions.md`.
-- Convert between this plugin's types and a platform's types (`mln.*`,
-  gl-js interop) with extension methods in the platform package's
-  `lib/src/extensions.dart`, not with static or top-level helpers or members
-  of interop types. Name an extension `<Type>Ext`, or `Mln<Type>Ext` and
-  `Js<Type>Ext` on platform types; convert with `toMln()` or `toJs()` and back
-  with `to<Type>()`.
-- In docs and messages, name platforms ("only on web", "not on web", or a
-  list), never the engine behind them, such as MapLibre Native.
+- Record a decision once, in the file of its area: the decision in bold,
+  then why. Change an existing entry instead of adding a second one, and
+  link to another file instead of restating it. A missing feature of
+  `maplibre_native_ffi` goes to `ffi-gaps.md`.
+- Update this file, the guidelines and the decision files in the same commit
+  as the change they describe.
 - Never edit `*.g.dart` by hand. Change the generator in `tool/codegen/`.
 - Use conventional commits (`feat(native): …`, `fix: …`, `ci: …`).
-- Read `.agents/decisions.md` before changing rendering, threading, or the
-  native build.
-- Keep this file and `.agents/decisions.md` up to date in the same commit as
-  the change: new commands, rules, layout and decisions.
 - Bugs, features and other open work are tracked in GitHub issues, not in
   files in the repository.

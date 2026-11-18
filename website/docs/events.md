@@ -1,5 +1,6 @@
 ---
 icon: lucide/send
+description: 'React to taps, drags, camera changes and style loads with the on… callbacks of MapLibreMap.'
 ---
 
 # Events

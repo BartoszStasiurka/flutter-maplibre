@@ -17,6 +17,12 @@ It also runs on macOS, Windows and Linux.
 Both packages define `MapLibreMap`, `CameraPosition`, `CameraUpdate` and more,
 so replace the import in each file instead of using both.
 
+!!! tip "Migrate with an AI assistant"
+
+    The [`maplibre-migrate` skill](https://github.com/maplibre/flutter-maplibre/tree/main/skills/maplibre-migrate)
+    walks AI coding assistants through this guide. See
+    [AI tools](../getting-started/ai-tools.md#migration-skill) to install it.
+
 ## 1. Replace the dependency
 
 ```bash

@@ -1,5 +1,6 @@
 ---
 title: 'Docs'
+description: 'What the maplibre package does and where to find each part of its documentation.'
 ---
 
 # Overview
@@ -23,6 +24,8 @@ iOS, macOS, Windows and Linux, and with
 - [Platform setup](getting-started/platforms.md): the setup each platform
   needs.
 - [First map](getting-started/usage.md): show a map and control it.
+- [AI tools](getting-started/ai-tools.md): give AI coding assistants the
+  current docs.
 
 ## Guides
 
@@ -50,5 +53,6 @@ iOS, macOS, Windows and Linux, and with
   and from maplibre_gl, flutter_map, google_maps_flutter and
   mapbox_maps_flutter.
 - [Compare](../compare/index.md) `maplibre` with other map packages.
-- [Architecture](contributing/architecture.md) and
-  [Local development](contributing/development.md) for contributors.
+- [Architecture](contributing/architecture.md),
+  [Local development](contributing/development.md) and
+  [API guidelines](contributing/api-guidelines.md) for contributors.

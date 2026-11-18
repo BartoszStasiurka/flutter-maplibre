@@ -1,5 +1,6 @@
 ---
 icon: lucide/database
+description: 'Download regions for offline use and manage the cache of maps.'
 ---
 
 # Offline & Cache

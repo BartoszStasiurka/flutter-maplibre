@@ -1,6 +1,7 @@
 ---
 title: 'Platform setup'
 icon: lucide/monitor-smartphone
+description: 'The setup steps that each platform needs, such as permissions and minimum versions.'
 ---
 
 # Platform setup

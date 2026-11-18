@@ -1,6 +1,7 @@
 ---
 title: 'Installation'
 icon: lucide/sparkles
+description: 'Add maplibre to a Flutter app and check the supported platforms and versions.'
 ---
 
 # Installation

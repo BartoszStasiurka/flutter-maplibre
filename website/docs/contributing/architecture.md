@@ -1,5 +1,6 @@
 ---
 icon: lucide/compass
+description: 'How the packages fit together, and how maps render, take gestures and change styles.'
 ---
 
 # Architecture

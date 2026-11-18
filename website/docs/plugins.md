@@ -1,4 +1,5 @@
 ---
+description: 'Build map features as widgets that add layers, callbacks and UI to the map, in your app or in a package.'
 icon: lucide/puzzle
 ---
 
@@ -114,6 +115,38 @@ Wrap a plugin's button in a `MapAlignItem`. Alone, it places the button at
 its own alignment. Inside a `MapAlign`, the group places it next to the
 built-in widgets without overlapping. See
 [User Interface](ui.md#placing-widgets).
+
+## Split your map into plugins
+
+Plugins aren't only for packages. As a map screen grows, its
+`MapLibreMap` collects the layers, callbacks and state of every feature on
+it. Move each feature into a plugin of its own instead, and the screen only
+lists them:
+
+```dart
+MapLibreMap(
+  options: MapOptions(style: .url(styleUrl)),
+  children: [
+    const MapControlButtons(),
+    StopsPlugin(stops: stops, onSelect: (stop) => setState(() => selected = stop)),
+    if (selected != null) SelectedStopPlugin(stop: selected!),
+    if (measuring) const MeasureLine(),
+  ],
+)
+```
+
+Each plugin keeps what belongs to its feature together:
+
+- **Its state, layers and callbacks** live in one widget, not spread over
+  the screen. A tap handler of one feature can't break another.
+- **Turning a feature on and off** is an `if` in `children`. Removing the
+  plugin removes its layers and callbacks and lifts its movement limits.
+- **Features stay independent.** Each plugin reads the map through
+  `MapController.of` and `CameraPosition.of`, so it works on every map it is
+  put on, and can move to a package of its own later.
+
+Keep a layer or callback on `MapLibreMap` when it belongs to the screen as a
+whole, such as the base data the screen is about.
 
 ## Packages that extend maplibre
 

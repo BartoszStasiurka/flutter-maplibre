@@ -1,6 +1,7 @@
 ---
 title: 'Map & Camera'
 icon: lucide/locate
+description: 'Map options, camera updates and animations, gestures, feature queries and paused rendering.'
 ---
 
 # Map & Camera
