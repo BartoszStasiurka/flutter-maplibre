@@ -126,6 +126,34 @@ extension type JsMap._(Camera _) implements Camera {
   /// Update the maximum bounding box of the map camera.
   external void setMaxBounds(LngLatBounds? maxBounds);
 
+  /// Merges [state] into the feature state of the feature [feature], an
+  /// object of `source`, `sourceLayer` and `id`.
+  ///
+  /// https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/#setfeaturestate
+  external void setFeatureState(JSObject feature, JSAny state);
+
+  /// Removes the feature state that [target] selects, or only its [key].
+  ///
+  /// https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/#removefeaturestate
+  external void removeFeatureState(JSObject target, [String? key]);
+
+  /// Sets the global state property [name]; null resets it to the style's
+  /// default.
+  ///
+  /// https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/#setglobalstateproperty
+  external void setGlobalStateProperty(String name, JSAny? value);
+
+  /// Replaces the light of the style.
+  ///
+  /// https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/#setlight
+  external void setLight(JSAny light);
+
+  /// The internal style object of gl-js, which the style controller needs for
+  /// the style's transition: gl-js reads `style.stylesheet.transition` on
+  /// every frame and has no setter for it.
+  @JS('style')
+  external JSObject? get styleObject;
+
   /// Update the used projection.
   ///
   /// https://maplibre.org/maplibre-style-spec/projection/

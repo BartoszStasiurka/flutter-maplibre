@@ -97,6 +97,21 @@ extension ImageTextFitExt on ImageTextFit {
   };
 }
 
+/// Converts a [FeatureRef] for the C API.
+extension FeatureRefExt on FeatureRef {
+  /// The selector of the feature state of this feature.
+  mln.FeatureStateSelector toMln() => mln.FeatureStateSelector(
+    sourceId: sourceId,
+    sourceLayerId: sourceLayer ?? '',
+    featureId: switch (id) {
+      final int id when id >= 0 => mln.FeatureIdUintValue(id),
+      final int id => mln.FeatureIdIntValue(id),
+      final double id => mln.FeatureIdDoubleValue(id),
+      final id => mln.FeatureIdStringValue(id.toString()),
+    },
+  );
+}
+
 /// Extension methods for the [Geographic] class.
 extension GeographicExt on Geographic {
   /// This position in the C API.

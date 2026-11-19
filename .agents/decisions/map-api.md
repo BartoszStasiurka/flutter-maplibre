@@ -137,3 +137,18 @@
   controller still can, until the next change. Presenting frames in build
   through one texture per ring slot would close the remaining one-frame race
   on native, but changes how every map presents, so it is not done.
+- **Global state values are declarative, `MapOptions.globalState`; the
+  style's `state` defaults and the merged result are read on
+  `StyleController.globalState`.** The values are app state, toggled with
+  `setState`, and should outlive a style switch, as gl-js's `globalState`
+  map option does. So there is no imperative setter (a widget parameter has
+  no controller method for the same thing). `StyleGlobalState` sends only the
+  keys that changed; a removed or null key goes back to the style default,
+  which Dart sends itself as it knows the defaults from the style JSON
+  (gl-js resets on null, the C API is not documented to). Each newly loaded
+  style gets every value right in its load callback, before the style JSON
+  is read, so its first frames already use them; web doesn't pass gl-js's
+  `globalState` option, so that both platforms apply the values the same way.
+  A map can keep global state across a style switch (gl-js's diffed
+  `setStyle` does), so the new style also resets the keys that the previous
+  one set and the options no longer have, once its defaults are read.

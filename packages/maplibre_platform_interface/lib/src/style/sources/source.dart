@@ -14,6 +14,7 @@ part 'vector_source.dart';
 part 'image_source.dart';
 part 'video_source.dart';
 part 'style_sources.dart';
+part 'feature_ref.dart';
 
 /// The base Source class that can't be used directly.
 ///

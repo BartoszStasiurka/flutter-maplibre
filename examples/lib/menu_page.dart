@@ -22,6 +22,7 @@ import 'package:maplibre_example/style_layers_fill_extrusion_page.dart';
 import 'package:maplibre_example/style_layers_fill_page.dart';
 import 'package:maplibre_example/style_layers_heatmap_page.dart';
 import 'package:maplibre_example/style_layers_hillshade_page.dart';
+import 'package:maplibre_example/style_layers_hover_page.dart';
 import 'package:maplibre_example/style_layers_line_page.dart';
 import 'package:maplibre_example/style_layers_raster_page.dart';
 import 'package:maplibre_example/style_layers_symbol_page.dart';
@@ -237,6 +238,11 @@ class MenuPage extends StatelessWidget {
                           label: 'Hillshade',
                           iconData: Icons.landscape,
                           location: StyleLayersHillshadePage.location,
+                        ),
+                        ItemCard(
+                          label: 'Hover and Select',
+                          iconData: Icons.ads_click,
+                          location: StyleLayersHoverPage.location,
                         ),
                         ItemCard(
                           label: 'Line',

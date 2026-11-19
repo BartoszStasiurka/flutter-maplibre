@@ -14,6 +14,7 @@ class StyleLayersFillPage extends StatefulWidget {
 
 class _StyleLayersFillPageState extends State<StyleLayersFillPage> {
   static const _layerId = 'LakeConstance-Layer';
+  static const _sourceId = 'LakeConstance-Source';
 
   late final MapController _controller;
 
@@ -58,16 +59,24 @@ class _StyleLayersFillPageState extends State<StyleLayersFillPage> {
       'assets/geojson/lake-constance.json',
     );
     await style.sources.add(
-      GeoJsonSource.data(
-        id: 'LakeConstance-Source',
-        data: .text(geojsonPolygon),
-      ),
+      GeoJsonSource.data(id: _sourceId, data: .text(geojsonPolygon)),
     );
     await style.layers.add(
       FillStyleLayer(
         id: _layerId,
-        sourceId: 'LakeConstance-Source',
-        color: const .literal(Color(0xFF429EF5)),
+        sourceId: _sourceId,
+        // Darker while the mouse is over the lake: the feature state changes
+        // the color without touching the data of the source.
+        color: .select([
+          (
+            Expression.equal(.featureState('hover'), const .literal(true)),
+            const .literal(Color(0xFF1565C0)),
+          ),
+        ], fallback: const .literal(Color(0xFF429EF5))),
+        onEnter: (event) =>
+            style.sources.setFeatureState(.of(event.feature), {'hover': true}),
+        onLeave: (event) =>
+            style.sources.setFeatureState(.of(event.feature), {'hover': false}),
       ),
     );
   }

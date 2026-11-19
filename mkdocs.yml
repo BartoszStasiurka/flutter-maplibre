@@ -40,6 +40,7 @@ nav:
           - Paint & Layout: docs/style-layers/paint-and-layout.md
           - Expressions: docs/style-layers/expressions.md
           - Click and Hover: docs/style-layers/click-and-hover.md
+          - Feature State: docs/style-layers/feature-state.md
       - Migrate:
           - Upgrade to 0.4: docs/migrate/upgrade-from-v0.3.x.md
           - From maplibre_gl: docs/migrate/maplibre_gl.md

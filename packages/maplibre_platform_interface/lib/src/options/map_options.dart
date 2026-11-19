@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:maplibre_platform_interface/maplibre_platform_interface.dart';
+import 'package:maplibre_platform_interface/src/style/expressions/expression_json.dart';
 import 'package:maplibre_platform_interface/src/widget/inherited_model.dart';
 
 part 'map_gestures.dart';
@@ -24,6 +25,7 @@ class MapOptions {
     this.gestures = const MapGestures(),
     this.fastPforEnabled = false,
     this.localIdeographFontFamily = 'sans-serif',
+    this.globalState = const {},
   });
 
   /// Find the [MapOptions] of the closest [MapLibreMap] in the widget tree.
@@ -114,6 +116,24 @@ class MapOptions {
   /// give that map its fonts.
   final String? localIdeographFontFamily;
 
+  /// Values of the style's global state by name, which layers read with
+  /// [Expression.globalState]. They override the defaults of the style's
+  /// `state`, also in every style that loads later.
+  ///
+  /// The map sets the values that changed when this changes. A name that is
+  /// removed, or whose value is null, goes back to the style's default.
+  /// [StyleController.globalState] reads the result.
+  ///
+  /// The values must be JSON values: bool, num, String, and lists and maps
+  /// of them.
+  ///
+  /// ```dart
+  /// MapOptions(globalState: {'units': imperial ? 'imperial' : 'metric'})
+  /// ```
+  ///
+  /// Defaults to no values.
+  final Map<String, Object?> globalState;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -128,7 +148,8 @@ class MapOptions {
           movements == other.movements &&
           gestures == other.gestures &&
           fastPforEnabled == other.fastPforEnabled &&
-          localIdeographFontFamily == other.localIdeographFontFamily;
+          localIdeographFontFamily == other.localIdeographFontFamily &&
+          jsonEquals(globalState, other.globalState);
 
   @override
   int get hashCode => Object.hash(
@@ -143,5 +164,6 @@ class MapOptions {
     gestures,
     fastPforEnabled,
     localIdeographFontFamily,
+    jsonHash(globalState),
   );
 }

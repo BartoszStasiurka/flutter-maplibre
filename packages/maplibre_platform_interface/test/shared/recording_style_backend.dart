@@ -105,4 +105,29 @@ class RecordingStyleBackend implements StyleBackend {
     lastSpecification = specification;
     return _done();
   }
+
+  @override
+  void setFeatureState(FeatureRef feature, Map<String, Object?> state) =>
+      calls.add('setFeatureState $feature $state');
+
+  @override
+  void removeFeatureState(
+    String sourceId, {
+    String? sourceLayer,
+    Object? id,
+    String? key,
+  }) => calls.add('removeFeatureState $sourceId $sourceLayer $id $key');
+
+  @override
+  void setGlobalStateProperty(String name, Object? value) =>
+      calls.add('setGlobalStateProperty $name $value');
+
+  @override
+  void setLight(Map<String, Object?> json) => calls.add('setLight $json');
+
+  @override
+  void setTransition(StyleTransition transition) => calls.add(
+    'setTransition ${transition.duration.inMilliseconds} '
+    '${transition.delay.inMilliseconds}',
+  );
 }

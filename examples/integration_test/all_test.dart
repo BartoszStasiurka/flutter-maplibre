@@ -11,6 +11,7 @@ import 'network_test.dart' as network;
 import 'offline_test.dart' as offline;
 import 'paused_test.dart' as paused;
 import 'projection_test.dart' as projection;
+import 'style_state_test.dart' as style_state;
 import 'style_test.dart' as style;
 import 'ui_test.dart' as ui;
 import 'unsupported_test.dart' as unsupported;
@@ -24,6 +25,7 @@ void main() {
   events.runTests();
   projection.runTests();
   style.runTests();
+  style_state.runTests();
   features.runTests();
   mlt.runTests();
   network.runTests();

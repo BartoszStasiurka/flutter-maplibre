@@ -63,4 +63,26 @@ abstract interface class StyleBackend {
     String url,
     Map<String, Object?> specification,
   );
+
+  /// Merges [state] into the feature state of [feature].
+  void setFeatureState(FeatureRef feature, Map<String, Object?> state);
+
+  /// Removes the feature state of the source [sourceId]: the key [key] of
+  /// the feature [id], every key of the feature [id] if [key] is null, or
+  /// the state of every feature of [sourceLayer] if [id] is null too.
+  void removeFeatureState(
+    String sourceId, {
+    String? sourceLayer,
+    Object? id,
+    String? key,
+  });
+
+  /// Sets the global state property [name] to [value].
+  void setGlobalStateProperty(String name, Object? value);
+
+  /// Replaces the light of the style with the light JSON [json].
+  void setLight(Map<String, Object?> json);
+
+  /// Sets the default transition of paint property changes.
+  void setTransition(StyleTransition transition);
 }

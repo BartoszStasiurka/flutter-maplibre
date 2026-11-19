@@ -70,6 +70,59 @@ Other tile providers like MapBox have own editors you can use.
 
 ![Maputnik Editor](../assets/images/maputnik.jpg)
 
+## Global state
+
+Layers can read values of the style's global state with the `global-state`
+expression (`Expression.globalState`), for example to switch every label
+between metric and imperial units at once. The style's `state` sets their
+defaults, and `MapOptions.globalState` overrides them:
+
+```dart
+MapLibreMap(
+  options: MapOptions(
+    style: MapStyle.url(styleUrl),
+    globalState: {'units': imperial ? 'imperial' : 'metric'},
+  ),
+)
+```
+
+Rebuild with new values to change them: the map sets the values that
+changed, and a value that is removed or null goes back to the style's
+default. The values also apply to every style that loads later.
+`StyleController.globalState` reads the result, the defaults merged with the
+options.
+
+## Light
+
+The light of a style shades the sides of fill extrusions. It is part of the
+style, so `StyleController.light` reads it and its setters change it, like
+the properties of a [style layer](style-layers/paint-and-layout.md):
+
+```dart
+onStyleLoaded: (style) {
+  style.light
+    ..anchor = const .literal(.map)
+    ..colorTransition = const StyleTransition(duration: Duration(seconds: 1))
+    ..color = const .literal(Color(0xFFFFE0B0))
+    ..intensity = const .literal(0.8);
+},
+```
+
+A newly loaded style has its own light.
+
+## Default transition
+
+Paint properties without a transition of their own, such as
+`FillStyleLayer.colorTransition`, change over the style's transition, 300 ms
+unless the style's `transition` sets another. `StyleController.transition`
+reads and changes it for the changes that follow:
+
+```dart
+style.transition = const StyleTransition(duration: Duration(seconds: 1));
+```
+
+A newly loaded style has its own.
+
 ## Label placement transitions
 
 Labels fade in and out as their collisions with other labels change, over

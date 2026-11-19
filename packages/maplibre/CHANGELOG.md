@@ -4,6 +4,12 @@
 
 - `MapLibreNetwork.offline` keeps maps and the `OfflineManager` off the
   network, so they use only the cache and offline regions. Not on web.
+- Feature state: `style.sources.setFeatureState` and friends with a
+  `FeatureRef`, for hover and selection styling without data updates.
+- `MapOptions.globalState` sets the style's global state, which
+  `StyleController.globalState` reads.
+- `StyleController.light` reads and changes the style's light, and
+  `StyleController.transition` its default transition.
 
 ## 0.4.0
 

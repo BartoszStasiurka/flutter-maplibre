@@ -6,6 +6,8 @@ import 'package:maplibre_platform_interface/src/style/style_owner.dart';
 
 part 'style_layer_collection.dart';
 part 'style_layers.g.dart';
+part 'style_light.dart';
+part 'style_light.g.dart';
 
 /// A layer of a map style.
 ///
@@ -21,7 +23,7 @@ part 'style_layers.g.dart';
 ///
 /// {@category Style}
 /// {@subCategory Style Layers}
-abstract class StyleLayer {
+abstract class StyleLayer with _JsonProperties {
   /// Creates a layer that is not on a map yet.
   StyleLayer({
     required this.id,
@@ -246,37 +248,20 @@ abstract class StyleLayer {
     (_isLayout(name) ? _layout : _paint)[name] = encodeProperty(value);
   }
 
-  Expression<T> _property<T>(
-    String name,
-    LiteralDecoder<T> decode,
-    Expression<T> fallback,
-  ) => switch (_layout[name] ?? _paint[name]) {
-    null => fallback,
-    final json => decodeExpression(json, decode),
-  };
+  @override
+  Object? _read(String name) => _layout[name] ?? _paint[name];
 
   Expression<T>? _propertyOrNull<T>(String name, LiteralDecoder<T> decode) =>
-      switch (_layout[name] ?? _paint[name]) {
+      switch (_read(name)) {
         null => null,
         final json => decodeExpression(json, decode),
       };
-
-  void _setExpression(String name, Expression<Object?>? value) =>
-      _write(name, value == null ? null : encodeProperty(value));
 
   void _initTransition(String name, StyleTransition? value) {
     if (value != null) _paint['$name-transition'] = value.toJson();
   }
 
-  StyleTransition? _transition(String name) =>
-      switch (_paint['$name-transition']) {
-        final Map<String, Object?> json => StyleTransition._fromJson(json),
-        _ => null,
-      };
-
-  void _setTransition(String name, StyleTransition? value) =>
-      _write('$name-transition', value?.toJson());
-
+  @override
   void _write(String name, Object? value) {
     final isLayout = _isLayout(name);
     final target = isLayout ? _layout : _paint;
@@ -373,7 +358,8 @@ final class StyleTransition {
     this.delay = Duration.zero,
   });
 
-  factory StyleTransition._fromJson(Map<String, Object?> json) =>
+  /// Reads a transition from its style JSON.
+  factory StyleTransition.fromJson(Map<String, Object?> json) =>
       StyleTransition(
         duration: Duration(
           milliseconds: (json['duration'] as num?)?.toInt() ?? 300,
@@ -476,4 +462,36 @@ final class UnknownStyleLayer extends StyleLayer {
 
   @override
   Set<String> get _layoutProperties => const {};
+}
+
+/// The typed access to properties of the style spec that [StyleLayer] and
+/// [StyleLight] share, over the JSON of an object of the style.
+mixin _JsonProperties {
+  /// The JSON value of the property [name], or null if it is not set.
+  Object? _read(String name);
+
+  /// Sets the property [name] to the JSON [value], or removes it if null,
+  /// and sends the change to the map.
+  void _write(String name, Object? value);
+
+  Expression<T> _property<T>(
+    String name,
+    LiteralDecoder<T> decode,
+    Expression<T> fallback,
+  ) => switch (_read(name)) {
+    null => fallback,
+    final json => decodeExpression(json, decode),
+  };
+
+  void _setExpression(String name, Expression<Object?>? value) =>
+      _write(name, value == null ? null : encodeProperty(value));
+
+  StyleTransition? _transition(String name) =>
+      switch (_read('$name-transition')) {
+        final Map<String, Object?> json => StyleTransition.fromJson(json),
+        _ => null,
+      };
+
+  void _setTransition(String name, StyleTransition? value) =>
+      _write('$name-transition', value?.toJson());
 }

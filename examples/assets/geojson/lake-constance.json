@@ -3,6 +3,7 @@
   "features": [
     {
       "type": "Feature",
+      "id": 1,
       "properties": {
         "stroke": "#555555",
         "stroke-width": 2,

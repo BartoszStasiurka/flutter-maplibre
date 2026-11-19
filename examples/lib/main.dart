@@ -23,6 +23,7 @@ import 'package:maplibre_example/style_layers_fill_extrusion_page.dart';
 import 'package:maplibre_example/style_layers_fill_page.dart';
 import 'package:maplibre_example/style_layers_heatmap_page.dart';
 import 'package:maplibre_example/style_layers_hillshade_page.dart';
+import 'package:maplibre_example/style_layers_hover_page.dart';
 import 'package:maplibre_example/style_layers_line_page.dart';
 import 'package:maplibre_example/style_layers_raster_page.dart';
 import 'package:maplibre_example/style_layers_symbol_page.dart';
@@ -80,6 +81,8 @@ class MyApp extends StatelessWidget {
         StyleLayersHillshadePage.location: (context) =>
             const StyleLayersHillshadePage(),
         StyleLayersFillPage.location: (context) => const StyleLayersFillPage(),
+        StyleLayersHoverPage.location: (context) =>
+            const StyleLayersHoverPage(),
         StyleLayersFillExtrusionPage.location: (context) =>
             const StyleLayersFillExtrusionPage(),
         StyleLayersRasterPage.location: (context) =>

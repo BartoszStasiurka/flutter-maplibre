@@ -201,6 +201,9 @@ class MapLibreMapStateNative extends MapLibreMapState {
     if (oldWidget.options != options) unawaited(_applyOptions());
     if (oldWidget.options.style != options.style) {
       unawaited(_setStyle(options.style));
+    } else if (oldWidget.options.globalState != options.globalState) {
+      style?.applyGlobalState(options.globalState);
+      _loadingStyle?.applyGlobalState(options.globalState);
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -505,10 +508,15 @@ class MapLibreMapStateNative extends MapLibreMapState {
     }
     // The layers of MapLibreMap.layers go with the old style.
     detachAnnotations();
+    // The style whose global state the map may still hold.
+    final previous = _loadingStyle ?? style;
     style?.dispose();
     style = null;
     final styleController = StyleControllerNative(map);
     _loadingStyle = styleController;
+    // Before the style JSON is read, so that the first frames of the style
+    // already show the values.
+    styleController.applyGlobalState(options.globalState, previous: previous);
     // The style is only handed out once its layers and sources are known.
     await styleController.load();
     // A style set while this one loaded leaves it empty and detached.

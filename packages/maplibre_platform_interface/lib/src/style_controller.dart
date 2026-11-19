@@ -63,6 +63,38 @@ abstract class StyleController implements Listenable {
   /// The sources of the style. Get, add, update and remove them here.
   StyleSources get sources;
 
+  /// The light of the style, which shades the sides of
+  /// [FillExtrusionStyleLayer] features. Change it through its setters.
+  ///
+  /// ```dart
+  /// style.light
+  ///   ..anchor = const .literal(.map)
+  ///   ..intensity = const .literal(0.8);
+  /// ```
+  StyleLight get light;
+
+  /// The global state of the style: the defaults of the style's `state`,
+  /// overridden by [MapOptions.globalState]. Layers read it with
+  /// [Expression.globalState].
+  ///
+  /// It is read only. Change [MapOptions.globalState] to change it.
+  StyleGlobalState get globalState;
+
+  /// The default transition of the style, which paint properties without a
+  /// transition of their own, such as [FillStyleLayer.colorTransition], use
+  /// when they change.
+  ///
+  /// It starts as the style's `transition`, 300 milliseconds without a delay
+  /// unless the style sets one. Setting it reaches the map without waiting
+  /// and applies to the changes made after it. A newly loaded style has its
+  /// own.
+  ///
+  /// Not on web, labels also fade over its duration as they are placed, as
+  /// [setPlacementTransitions] describes.
+  StyleTransition get transition;
+
+  set transition(StyleTransition value);
+
   /// Runs [updates], whose changes to the style show in one frame on native
   /// maps. On web they run as they are, as gl-js only renders in between
   /// tasks anyway.

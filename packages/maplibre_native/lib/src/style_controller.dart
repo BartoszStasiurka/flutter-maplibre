@@ -10,7 +10,9 @@ import 'package:maplibre_platform_interface/maplibre_platform_interface.dart';
 ///
 /// Sources and layers reach the map as style JSON, the form the C API takes
 /// them in.
-class StyleControllerNative extends StyleController implements StyleBackend {
+class StyleControllerNative extends StyleController
+    with StyleStateMixin
+    implements StyleBackend {
   /// Creates a style controller for a map.
   StyleControllerNative(this._map);
 
@@ -50,6 +52,7 @@ class StyleControllerNative extends StyleController implements StyleBackend {
     _replacedByNewer = true;
     layers.markReplaced();
     sources.markReplaced();
+    markStyleStateReplaced();
   }
 
   /// Fills [layers] and [sources] from the style that the map loaded, and
@@ -63,6 +66,7 @@ class StyleControllerNative extends StyleController implements StyleBackend {
     if (style case {'layers': final List<Object?> styleLayers}) {
       layers.load(styleLayers.whereType<Map<String, Object?>>());
     }
+    if (style case final Map<String, Object?> style) loadStyleState(style);
     await refreshAttributions();
   }
 
@@ -277,6 +281,48 @@ class StyleControllerNative extends StyleController implements StyleBackend {
     await added;
     await refreshAttributions();
   }
+
+  @override
+  void setFeatureState(FeatureRef feature, Map<String, Object?> state) =>
+      _map.discarding.setFeatureState(feature.toMln(), state);
+
+  @override
+  void removeFeatureState(
+    String sourceId, {
+    String? sourceLayer,
+    Object? id,
+    String? key,
+  }) {
+    final selector = id == null
+        ? mln.FeatureStateSelector(
+            sourceId: sourceId,
+            sourceLayerId: sourceLayer ?? '',
+          )
+        : FeatureRef(
+            sourceId: sourceId,
+            id: id,
+            sourceLayer: sourceLayer,
+          ).toMln();
+    _map.discarding.removeFeatureState(selector.copyWith(stateKey: key ?? ''));
+  }
+
+  @override
+  void setGlobalStateProperty(String name, Object? value) =>
+      _map.discarding.setGlobalStateProperty(name, value);
+
+  @override
+  void setLight(Map<String, Object?> json) =>
+      _map.discarding.setStyleLightJson(json);
+
+  /// Leaves `enablePlacementTransitions` as [setPlacementTransitions] set it.
+  @override
+  void setTransition(StyleTransition transition) =>
+      _map.discarding.setStyleTransitionOptions(
+        mln.StyleTransitionOptions(
+          durationMs: transition.duration.inMicroseconds / 1000,
+          delayMs: transition.delay.inMicroseconds / 1000,
+        ),
+      );
 
   @override
   Future<void> addImage(
