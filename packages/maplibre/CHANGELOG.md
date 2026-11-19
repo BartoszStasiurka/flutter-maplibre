@@ -1,3 +1,10 @@
+## Unreleased
+
+### Features
+
+- `MapLibreNetwork.offline` keeps maps and the `OfflineManager` off the
+  network, so they use only the cache and offline regions. Not on web.
+
 ## 0.4.0
 
 `maplibre` is now a MapLibre

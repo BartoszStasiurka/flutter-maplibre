@@ -106,6 +106,17 @@ class _OfflinePageState extends State<OfflinePage> {
           if (snapshot.data case final OfflineManager manager) {
             return ListView(
               children: [
+                // Shows the regions without the network, also on a device
+                // that is online.
+                SwitchListTile(
+                  title: const Text('Offline only'),
+                  subtitle: const Text(
+                    'Maps use only the cache and the downloaded regions',
+                  ),
+                  value: MapLibreNetwork.offline,
+                  onChanged: (value) =>
+                      setState(() => MapLibreNetwork.offline = value),
+                ),
                 ..._regionConfigs.map(
                   (config) => _OfflineRegionTile(
                     regionConfig: config,

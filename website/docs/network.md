@@ -1,6 +1,6 @@
 ---
 icon: lucide/globe
-description: 'Request headers and URL transforms for the styles, tiles and other resources that maps load.'
+description: 'Request headers, URL transforms and an offline switch for the styles, tiles and other resources that maps load.'
 ---
 
 # Network
@@ -63,4 +63,23 @@ Return the URL unchanged to keep it. The transform runs for every request, so
 keep it fast. If it throws, the error goes to `FlutterError.onError` and the
 request keeps its URL. Request headers match the transformed URL.
 
-`MapLibreNetwork.reset()` removes the headers and the transform.
+## Offline
+
+`offline` keeps maps and the `OfflineManager` from using the network, for
+example for an "offline only" setting that guarantees that maps use no
+mobile data, or to test [offline regions](offline.md) without turning off
+the device network:
+
+```dart
+MapLibreNetwork.offline = true;
+```
+
+While offline, maps show what is in the cache and in the offline regions.
+Requests for other resources, and offline region downloads, wait and start
+once `offline` is false again. The setting applies to the whole app process,
+also to the maps of other Flutter engines, and outlives a hot restart: when
+the first map or `OfflineManager` of an engine starts while the process is
+offline, `offline` turns true to match. Not on web, where it has no effect.
+
+`MapLibreNetwork.reset()` removes the headers and the transform and goes
+online again.

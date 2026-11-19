@@ -13,7 +13,9 @@ description: 'Download regions for offline use and manage the cache of maps.'
 
 Maps and the `OfflineManager` share one database, `maplibre_native.db` in the
 app support directory. Maps cache the resources they load in it, and show the
-regions you downloaded without network access.
+regions you downloaded without network access. To test them, or to keep maps
+from using mobile data, turn the network off for maps with
+[`MapLibreNetwork.offline`](network.md#offline).
 
 The `OfflineManager` provides a set of tools to manage the cache and handle
 offline maps. It enables users to download and interact with map data in areas

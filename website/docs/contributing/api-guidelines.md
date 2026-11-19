@@ -159,7 +159,10 @@ camera animations. An animation completes with a result
   web through MapLibre GL JS, everywhere else through the C API of
   `maplibre_native_ffi`.
 - When a platform can't support something, document it, and fail in a
-  documented way, for example with an `UnsupportedError`.
+  documented way, for example with an `UnsupportedError`. A setting that
+  only changes how a platform behaves, such as `MapLibreNetwork.offline`,
+  may instead have no effect there, as documented, so that apps need no
+  platform checks to set it.
 - Use the types of [geobase](https://pub.dev/packages/geobase) for geographic
   data: `Geographic` for positions, `GeoBox` for bounds, `Feature` and
   `Geometry` for features. `maplibre` re-exports the ones its API uses.

@@ -6,7 +6,7 @@ import 'package:maplibre_native/src/android/android_plugin.dart';
 import 'package:maplibre_native/src/extensions.dart';
 import 'package:maplibre_native_ffi/maplibre_native_ffi.dart';
 import 'package:maplibre_platform_interface/maplibre_platform_interface.dart'
-    show MapLibreNetwork;
+    show MapLibreNetwork, RequestHeaders;
 import 'package:path_provider/path_provider.dart';
 
 Future<String>? _databasePath;
@@ -39,6 +39,7 @@ Future<RuntimeHandle> createRuntime() async {
   final path = await databasePath();
   // Android needs the C library initialized before its first use.
   if (Platform.isAndroid) AndroidPlugin.initialize();
+  _applyNetworkStatus();
   final runtime = RuntimeHandle.create(
     options: RuntimeOptions(cachePath: path),
   );
@@ -50,9 +51,19 @@ Future<RuntimeHandle> createRuntime() async {
   if (!_listensToNetwork) {
     MapLibreNetwork.changes.addListener(_onNetworkChanged);
     _listensToNetwork = true;
+    _appliedHeaders = MapLibreNetwork.requestHeaders;
+    _appliedTransform = MapLibreNetwork.urlTransform != null;
   }
   try {
-    await _applyNetwork(runtime, changed: false);
+    // A new runtime has no headers and no transform, so it only needs the
+    // ones that are set.
+    await _applyNetwork(
+      runtime,
+      headers: MapLibreNetwork.requestHeaders.any(
+        (entry) => entry.kinds?.isEmpty != true,
+      ),
+      transform: MapLibreNetwork.urlTransform != null,
+    );
   } on Object {
     _runtimes.remove(runtime);
     await runtime.release();
@@ -66,53 +77,99 @@ Future<RuntimeHandle> createRuntime() async {
 final _runtimes = <RuntimeHandle>{};
 var _listensToNetwork = false;
 
+/// The headers, and whether there is a URL transform, as the runtimes have
+/// them, so that a change of another setting doesn't send them again.
+List<RequestHeaders> _appliedHeaders = const [];
+var _appliedTransform = false;
+
 void _onNetworkChanged() {
+  // The C library is initialized, as a runtime was created before.
+  _applyNetworkStatus();
+  // The setter replaces the list on each change.
+  final headers = !identical(MapLibreNetwork.requestHeaders, _appliedHeaders);
+  final transform = (MapLibreNetwork.urlTransform != null) != _appliedTransform;
+  _appliedHeaders = MapLibreNetwork.requestHeaders;
+  _appliedTransform = MapLibreNetwork.urlTransform != null;
+  if (!headers && !transform) return;
   _runtimes.removeWhere((runtime) => runtime.isClosed);
   for (final runtime in _runtimes) {
     unawaited(
-      _applyNetwork(runtime, changed: true).catchError((
-        Object error,
-        StackTrace stack,
-      ) {
-        // A runtime that closed meanwhile needs no settings.
-        if (runtime.isClosed) return;
-        FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: error,
-            stack: stack,
-            library: 'maplibre',
-            context: ErrorDescription('while applying the network settings'),
-          ),
-        );
-      }),
+      _applyNetwork(runtime, headers: headers, transform: transform).catchError(
+        (Object error, StackTrace stack) {
+          // A runtime that closed meanwhile needs no settings.
+          if (runtime.isClosed) return;
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              exception: error,
+              stack: stack,
+              library: 'maplibre',
+              context: ErrorDescription('while applying the network settings'),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
-/// Sets the headers and URL transform of [MapLibreNetwork] on [runtime].
-/// A new runtime has neither, so it only needs the ones that are set.
+/// The network status of the C library as this isolate last saw or set it,
+/// or null before the isolate first used the library.
+bool? _offline;
+
+/// Sets [MapLibreNetwork.offline] as the network status of the C library,
+/// which applies to every runtime of the process.
+///
+/// The status outlives the isolate: another engine, or this one before a hot
+/// restart, may have set it. So the first call reads it, and if the process
+/// is offline, sets [MapLibreNetwork.offline] to match. Later calls set only
+/// changes.
+void _applyNetworkStatus() {
+  if (_offline == null) {
+    final offline = getNetworkStatus() == NetworkStatus.offline;
+    _offline = offline;
+    if (offline && !MapLibreNetwork.offline) {
+      // The first call comes before the listener, so this sets nothing.
+      MapLibreNetwork.offline = true;
+      return;
+    }
+  }
+  final offline = MapLibreNetwork.offline;
+  if (offline == _offline) return;
+  setNetworkStatus(offline ? NetworkStatus.offline : NetworkStatus.online);
+  _offline = offline;
+}
+
+/// Sets the [headers] and the URL [transform] of [MapLibreNetwork] on
+/// [runtime], or clears the ones that are not set.
 Future<void> _applyNetwork(
   RuntimeHandle runtime, {
-  required bool changed,
+  required bool headers,
+  required bool transform,
 }) async {
-  // Entries without kinds match nothing, and an empty rule table is invalid.
-  final rules = [
-    for (final entry in MapLibreNetwork.requestHeaders)
-      if (entry.kinds?.isEmpty != true) entry.toMln(),
-  ];
-  if (rules.isNotEmpty) {
-    await runtime.setHttpHeaderTransform(HttpHeaderTransform(rules: rules));
-  } else if (changed) {
-    await runtime.clearHttpHeaderTransform();
+  if (headers) {
+    // Entries without kinds match nothing, and an empty rule table is
+    // invalid.
+    final rules = [
+      for (final entry in MapLibreNetwork.requestHeaders)
+        if (entry.kinds?.isEmpty != true) entry.toMln(),
+    ];
+    if (rules.isNotEmpty) {
+      await runtime.setHttpHeaderTransform(HttpHeaderTransform(rules: rules));
+    } else {
+      await runtime.clearHttpHeaderTransform();
+    }
   }
-  // The transform waits for Dart on every request, so it is only set while
-  // there is one.
-  if (MapLibreNetwork.urlTransform != null) {
-    await runtime.setResourceTransform(
-      ResourceTransform(callback: _transformResource),
-    );
-  } else if (changed) {
-    await runtime.clearResourceTransform();
+  // The transform reads MapLibreNetwork.urlTransform for each request, so
+  // only whether there is one matters. It waits for Dart on every request,
+  // so it is only set while there is one.
+  if (transform) {
+    if (MapLibreNetwork.urlTransform != null) {
+      await runtime.setResourceTransform(
+        ResourceTransform(callback: _transformResource),
+      );
+    } else {
+      await runtime.clearResourceTransform();
+    }
   }
 }
 

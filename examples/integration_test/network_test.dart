@@ -168,5 +168,32 @@ void runTests() {
       );
       expect(server.requests.map((r) => r.$2), everyElement(isNull));
     }, skip: kIsWeb);
+
+    testWidgets('requests nothing while offline', (tester) async {
+      final server = await _StyleServer.start();
+      addTearDown(server.close);
+      final map = await pumpMap(tester);
+      MapLibreNetwork.offline = true;
+      final since = map.styleLoads;
+      await map.setOptions(
+        MapOptions(style: MapStyle.url('${server.origin}/style.json')),
+      );
+      final until = DateTime.now().add(const Duration(seconds: 1));
+      await map.pumpUntil(
+        () => DateTime.now().isAfter(until),
+        reason: () => 'waiting while offline',
+      );
+      expect(server.requests, isEmpty);
+
+      // The request that waited starts once the map is online again.
+      MapLibreNetwork.offline = false;
+      await map.waitForStyleLoad(since: since);
+      await map.waitForFeatures(
+        map.center,
+        (features) => features.isNotEmpty,
+        layerIds: ['points'],
+      );
+      expect(server.requests.map((r) => r.$1), contains('/style.json'));
+    }, skip: kIsWeb);
   });
 }

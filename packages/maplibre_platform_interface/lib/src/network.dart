@@ -140,6 +140,7 @@ class RequestHeaders {
 abstract final class MapLibreNetwork {
   static List<RequestHeaders> _requestHeaders = const [];
   static UrlTransform? _urlTransform;
+  static var _offline = false;
   static final _changes = _Changes();
 
   /// The headers to send with requests. The first entry whose
@@ -165,6 +166,29 @@ abstract final class MapLibreNetwork {
   static set urlTransform(UrlTransform? value) {
     if (value == _urlTransform) return;
     _urlTransform = value;
+    _changes.notify();
+  }
+
+  /// Whether maps and the [OfflineManager] use only the cache and the
+  /// offline regions, and request nothing from the network. Defaults to
+  /// false.
+  ///
+  /// While offline, maps show the resources that are cached or in an
+  /// offline region. Requests for the others, and offline region
+  /// downloads, wait and start once [offline] is false again. Use it for an
+  /// "offline only" setting that guarantees that maps use no mobile data,
+  /// or to test offline regions without turning off the device network.
+  ///
+  /// The setting applies to the whole app process, also to the maps of
+  /// other Flutter engines, and it outlives a hot restart. When the first
+  /// map or [OfflineManager] of an engine starts while the process is
+  /// offline, [offline] turns true to match. Not on web, where it has no
+  /// effect.
+  static bool get offline => _offline;
+
+  static set offline(bool value) {
+    if (value == _offline) return;
+    _offline = value;
     _changes.notify();
   }
 
@@ -200,10 +224,11 @@ abstract final class MapLibreNetwork {
     }
   }
 
-  /// Restores the defaults: no headers and no URL transform.
+  /// Restores the defaults: no headers, no URL transform and online.
   static void reset() {
     requestHeaders = const [];
     urlTransform = null;
+    offline = false;
   }
 }
 
